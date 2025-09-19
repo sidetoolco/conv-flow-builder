@@ -59,7 +59,9 @@ app.post('/api/upload', upload.array('audioFiles', 10), async (req, res) => {
       const transcript = await assemblyAI.transcripts.transcribe({
         audio: file.path,
         speaker_labels: true,
-        language_detection: true
+        speakers_expected: 2,
+        language_detection: true,
+        audio_channels: 2  // Try dual-channel speaker detection
       });
 
       // Poll for completion
@@ -112,11 +114,21 @@ async function analyzeConversationFlow(transcriptions) {
   const allUtterances = transcriptions.flatMap(t => t.utterances || []);
 
   let transcriptText = '';
+  let hasSpeakerSeparation = false;
 
   if (allUtterances.length > 0) {
-    // We have speaker-separated utterances
-    transcriptText = allUtterances.map(u => `Speaker ${u.speaker}: ${u.text}`).join('\n');
-    console.log('Using speaker-separated utterances:', allUtterances.length);
+    // Check if we have actual speaker separation (not all same speaker)
+    const uniqueSpeakers = new Set(allUtterances.map(u => u.speaker));
+    hasSpeakerSeparation = uniqueSpeakers.size > 1;
+
+    if (hasSpeakerSeparation) {
+      transcriptText = allUtterances.map(u => `Speaker ${u.speaker}: ${u.text}`).join('\n');
+      console.log('Using speaker-separated utterances:', allUtterances.length, 'speakers:', uniqueSpeakers.size);
+    } else {
+      // All same speaker - need to infer conversation structure
+      transcriptText = transcriptions.map(t => t.text).join('\n\n');
+      console.log('Single speaker detected, will infer conversation structure from content');
+    }
   } else {
     // Fallback to full text if no utterances
     transcriptText = transcriptions.map(t => t.text).join('\n\n');
@@ -133,12 +145,66 @@ async function analyzeConversationFlow(transcriptions) {
     };
   }
 
+  // If no speaker separation, try to split the conversation manually
+  if (!hasSpeakerSeparation && transcriptText) {
+    const sentences = transcriptText
+      .split(/[.?!]+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+
+    if (sentences.length > 0) {
+      // Reconstruct with inferred speakers based on patterns
+      const inferredConversation = sentences.map((sentence, index) => {
+        // Common agent patterns (Spanish and English)
+        const agentPatterns = [
+          /hablo de parte de/i,
+          /me comunico con/i,
+          /le llamo por/i,
+          /dejar[é|e] registro/i,
+          /necesita ayuda/i,
+          /puede realizar/i,
+          /calling from/i,
+          /this is.*from/i,
+          /can help you/i
+        ];
+
+        // Common customer patterns
+        const customerPatterns = [
+          /s[í|i] se[ñ|n]orita/i,
+          /s[í|i] se[ñ|n]or/i,
+          /un gusto/i,
+          /okay/i,
+          /yes/i,
+          /no problem/i
+        ];
+
+        const isAgent = agentPatterns.some(pattern => pattern.test(sentence));
+        const isCustomer = customerPatterns.some(pattern => pattern.test(sentence));
+
+        // Default to alternating if unclear
+        const speaker = isAgent ? 'Agent' : isCustomer ? 'Customer' : (index % 2 === 0 ? 'Agent' : 'Customer');
+
+        return `${speaker}: ${sentence}`;
+      }).join('\n');
+
+      transcriptText = inferredConversation;
+      console.log('Inferred conversation structure from content patterns');
+    }
+  }
+
   const prompt = `Analyze this conversation transcript and create a structured conversation flow for a voice AI agent.
+
+${!hasSpeakerSeparation ? 'NOTE: This transcript does not have speaker separation. Please analyze the content to identify conversation turns between agent and customer based on context clues like greetings, questions, confirmations, etc.' : ''}
 
 Transcript:
 ${transcriptText}
 
-Important: If the transcript appears to be a single block of text without clear speaker separation, try to identify the conversation flow based on the content (questions, responses, greetings, etc.).
+Based on this transcript, identify the conversation flow. Look for:
+- Greetings ("Buen día", "Hello")
+- Agent identification ("hablo de parte de...")
+- Customer responses ("Sí señorita")
+- Payment discussions ("pago de su crédito")
+- Confirmations and closings
 
 Please provide:
 1. A conversation flow in JSON format with nodes and edges

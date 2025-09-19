@@ -170,38 +170,52 @@ app.post('/api/upload', upload.array('audioFiles', 10), async (req, res) => {
 });
 
 async function analyzeConversationFlow(transcriptions) {
-  // Check if we have utterances with speaker labels
-  const allUtterances = transcriptions.flatMap(t => t.utterances || []);
+  try {
+    console.log('Analyzing conversation flow for', transcriptions.length, 'transcription(s)');
 
-  let transcriptText = '';
-  let hasSpeakerSeparation = false;
+    // Check if we have utterances with speaker labels
+    const allUtterances = transcriptions.flatMap(t => t.utterances || []);
 
-  if (allUtterances.length > 0) {
-    // Check if we have actual speaker separation (not all same speaker)
-    const uniqueSpeakers = new Set(allUtterances.map(u => u.speaker));
-    hasSpeakerSeparation = uniqueSpeakers.size > 1;
+    let transcriptText = '';
+    let hasSpeakerSeparation = false;
 
-    if (hasSpeakerSeparation) {
-      transcriptText = allUtterances.map(u => `Speaker ${u.speaker}: ${u.text}`).join('\n');
-      console.log('Using speaker-separated utterances:', allUtterances.length, 'speakers:', uniqueSpeakers.size);
+    if (allUtterances.length > 0) {
+      // Check if we have actual speaker separation (not all same speaker)
+      const uniqueSpeakers = new Set(allUtterances.map(u => u.speaker));
+      hasSpeakerSeparation = uniqueSpeakers.size > 1;
+
+      if (hasSpeakerSeparation) {
+        transcriptText = allUtterances.map(u => `Speaker ${u.speaker}: ${u.text}`).join('\n');
+        console.log('Using speaker-separated utterances:', allUtterances.length, 'speakers:', uniqueSpeakers.size);
+      } else {
+        // All same speaker - need to infer conversation structure
+        transcriptText = transcriptions.map(t => t.text).join('\n\n');
+        console.log('Single speaker detected, will infer conversation structure from content');
+      }
     } else {
-      // All same speaker - need to infer conversation structure
+      // Fallback to full text if no utterances
       transcriptText = transcriptions.map(t => t.text).join('\n\n');
-      console.log('Single speaker detected, will infer conversation structure from content');
+      console.log('No utterances found, using full text');
     }
-  } else {
-    // Fallback to full text if no utterances
-    transcriptText = transcriptions.map(t => t.text).join('\n\n');
-    console.log('No utterances found, using full text');
-  }
 
-  if (!transcriptText) {
-    console.error('No transcript text available');
+    if (!transcriptText) {
+      console.error('No transcript text available');
+      return {
+        nodes: [],
+        edges: [],
+        prompts: {},
+        mermaidDiagram: 'graph TD\n    Start[No transcript available]'
+      };
+    }
+
+    console.log('Transcript text length:', transcriptText.length, 'characters');
+  } catch (prepError) {
+    console.error('Error preparing transcript text:', prepError);
     return {
       nodes: [],
       edges: [],
       prompts: {},
-      mermaidDiagram: 'graph TD\n    Start[No transcript available]'
+      mermaidDiagram: 'graph TD\n    Error[Error preparing transcript]'
     };
   }
 
@@ -300,6 +314,7 @@ IMPORTANT:
 - Extract actual phrases and patterns from the transcript`;
 
   try {
+    console.log('Sending request to OpenAI GPT-4...');
     const response = await openai.chat.completions.create({
       model: 'gpt-4-turbo-preview',  // Using GPT-4 Turbo - latest available model
       messages: [
@@ -307,10 +322,74 @@ IMPORTANT:
         { role: 'user', content: prompt }
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.3  // Lower temperature for more consistent output
+      temperature: 0.3,  // Lower temperature for more consistent output
+      max_tokens: 4000  // Ensure we have enough tokens for response
     });
 
-    const flowData = JSON.parse(response.choices[0].message.content);
+    // Check if we got a valid response
+    if (!response || !response.choices || !response.choices[0] || !response.choices[0].message) {
+      console.error('Invalid OpenAI response structure:', response);
+      throw new Error('Invalid response from OpenAI API');
+    }
+
+    const messageContent = response.choices[0].message.content;
+    console.log('OpenAI response received, length:', messageContent?.length || 0);
+
+    // Try to parse the JSON response
+    let flowData;
+    try {
+      flowData = JSON.parse(messageContent);
+    } catch (parseError) {
+      console.error('Failed to parse OpenAI response as JSON:', messageContent?.substring(0, 500));
+      console.error('Parse error:', parseError);
+
+      // Return a fallback flow if parsing fails
+      return {
+        nodes: [
+          {
+            id: 'node1',
+            type: 'greeting',
+            speaker: 'agent',
+            content: 'Greeting',
+            fullPrompt: 'Start the conversation with a greeting',
+            examples: ['Hello', 'Good day'],
+            listenFor: ['Hello', 'Hi'],
+            nextActions: { positive: 'node2' }
+          },
+          {
+            id: 'node2',
+            type: 'question',
+            speaker: 'agent',
+            content: 'Main Topic',
+            fullPrompt: 'Discuss the main topic',
+            examples: [],
+            listenFor: [],
+            nextActions: { positive: 'node3' }
+          },
+          {
+            id: 'node3',
+            type: 'farewell',
+            speaker: 'agent',
+            content: 'Closing',
+            fullPrompt: 'End the conversation',
+            examples: ['Goodbye', 'Thank you'],
+            listenFor: [],
+            nextActions: {}
+          }
+        ],
+        edges: [
+          { from: 'node1', to: 'node2' },
+          { from: 'node2', to: 'node3' }
+        ],
+        prompts: {
+          node1: 'Start with a greeting',
+          node2: 'Discuss main topic',
+          node3: 'Close conversation'
+        },
+        globalInstructions: 'Be helpful and professional',
+        errorHandling: 'Ask for clarification if needed'
+      };
+    }
 
     console.log('Generated flow data:', JSON.stringify(flowData, null, 2));
 
@@ -324,11 +403,36 @@ IMPORTANT:
     };
   } catch (error) {
     console.error('Error analyzing conversation:', error);
+
+    // Check if it's an OpenAI API error
+    if (error.response) {
+      console.error('OpenAI API error response:', error.response.data || error.response);
+      console.error('OpenAI API status:', error.response.status);
+    } else if (error.message) {
+      console.error('Error message:', error.message);
+    }
+
+    // Return a basic flow structure to prevent frontend errors
     return {
-      nodes: [],
+      nodes: [
+        {
+          id: 'error',
+          type: 'greeting',
+          speaker: 'agent',
+          content: 'Error Processing',
+          fullPrompt: 'An error occurred processing the conversation. Please try again.',
+          examples: [],
+          listenFor: [],
+          nextActions: {}
+        }
+      ],
       edges: [],
-      prompts: {},
-      mermaidDiagram: ''
+      prompts: {
+        error: 'An error occurred processing the conversation. Please check the logs and try again.'
+      },
+      globalInstructions: 'Error occurred during processing',
+      errorHandling: 'Please check server logs for details',
+      mermaidDiagram: 'graph TD\n    Error[Error Processing Conversation]'
     };
   }
 }

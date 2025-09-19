@@ -6,6 +6,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const { AssemblyAI } = require('assemblyai');
 const OpenAI = require('openai');
+// Updated with file size fixes for Vercel deployment
 
 const app = express();
 const port = process.env.PORT || 3000;

@@ -231,12 +231,13 @@ Format the response as JSON with structure:
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-4o',  // Using GPT-4o - OpenAI's most advanced model
       messages: [
-        { role: 'system', content: 'You are an expert at analyzing conversations and creating voice agent flows.' },
+        { role: 'system', content: 'You are an expert at analyzing conversations and creating voice agent flows. You excel at understanding context, identifying speakers, and creating structured conversation flows for voice AI agents.' },
         { role: 'user', content: prompt }
       ],
-      response_format: { type: 'json_object' }
+      response_format: { type: 'json_object' },
+      temperature: 0.3  // Lower temperature for more consistent output
     });
 
     const flowData = JSON.parse(response.choices[0].message.content);

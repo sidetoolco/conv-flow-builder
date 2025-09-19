@@ -37,28 +37,70 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   fileFilter: (req, file, cb) => {
-    const allowedMimes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/webm', 'audio/mp4', 'audio/m4a'];
-    if (allowedMimes.includes(file.mimetype)) {
+    const allowedMimes = [
+      'audio/mpeg',
+      'audio/mp3',
+      'audio/wav',
+      'audio/x-wav',  // Some systems report WAV files as x-wav
+      'audio/wave',    // Alternative WAV mime type
+      'audio/webm',
+      'audio/mp4',
+      'audio/m4a',
+      'audio/ogg',
+      'audio/flac'
+    ];
+
+    console.log(`File upload attempted: ${file.originalname}, MIME: ${file.mimetype}`);
+
+    // Also check file extension as fallback
+    const allowedExtensions = ['.mp3', '.wav', '.m4a', '.mp4', '.webm', '.ogg', '.flac'];
+    const fileExtension = path.extname(file.originalname).toLowerCase();
+
+    if (allowedMimes.includes(file.mimetype) || allowedExtensions.includes(fileExtension)) {
+      console.log('File accepted for upload');
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only audio files are allowed.'));
+      console.log(`File rejected: Invalid type - ${file.mimetype}, extension: ${fileExtension}`);
+      cb(new Error(`Invalid file type. Only audio files are allowed. Received: ${file.mimetype}`));
     }
+  },
+  limits: {
+    fileSize: 100 * 1024 * 1024  // 100MB limit
   }
 });
 
 app.post('/api/upload', upload.array('audioFiles', 10), async (req, res) => {
   try {
+    console.log('Upload request received');
+    console.log('Files received:', req.files?.length || 0);
+
+    if (!req.files || req.files.length === 0) {
+      throw new Error('No files received in upload request');
+    }
+
     const transcriptions = [];
 
     for (const file of req.files) {
-      console.log(`Transcribing ${file.filename}...`);
+      console.log(`Processing file: ${file.filename}`);
+      console.log(`File details:`, {
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        size: file.size,
+        path: file.path
+      });
 
       // Upload and transcribe the audio file
       console.log(`Starting transcription for ${file.filename}...`);
 
-      // First, upload the file to AssemblyAI
-      const uploadedFile = await assemblyAI.files.upload(file.path);
-      console.log('File uploaded to AssemblyAI:', uploadedFile.upload_url);
+      try {
+        // First, upload the file to AssemblyAI
+        console.log('Uploading to AssemblyAI...');
+        const uploadedFile = await assemblyAI.files.upload(file.path);
+        console.log('File uploaded successfully:', uploadedFile.upload_url);
+      } catch (uploadError) {
+        console.error('AssemblyAI upload error:', uploadError);
+        throw new Error(`Failed to upload file to AssemblyAI: ${uploadError.message}`);
+      }
 
       const transcript = await assemblyAI.transcripts.transcribe({
         audio_url: uploadedFile.upload_url,  // Use the uploaded URL
@@ -104,10 +146,12 @@ app.post('/api/upload', upload.array('audioFiles', 10), async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error processing files:', error);
+    console.error('Detailed error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
+      details: error.toString()
     });
   }
 });

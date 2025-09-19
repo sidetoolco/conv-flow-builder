@@ -1,6 +1,6 @@
 # Conversation Flow Builder
 
-A tool to convert conversation recordings into structured flow diagrams for voice AI agents. Upload audio conversations, get them transcribed via AssemblyAI, and automatically generate Mermaid flow diagrams with prompts for each conversation node.
+A tool to convert conversation recordings into structured flow diagrams for voice AI agents. Upload audio conversations, get them transcribed via AssemblyAI, and automatically generate Mermaid flow diagrams with prompts for each conversation node. Now with Supabase integration for persistent storage of flows and audio files!
 
 ## Features
 

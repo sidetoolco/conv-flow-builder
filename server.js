@@ -56,12 +56,15 @@ app.post('/api/upload', upload.array('audioFiles', 10), async (req, res) => {
       // Upload and transcribe the audio file
       console.log(`Starting transcription for ${file.filename}...`);
 
+      // First, upload the file to AssemblyAI
+      const uploadedFile = await assemblyAI.files.upload(file.path);
+      console.log('File uploaded to AssemblyAI:', uploadedFile.upload_url);
+
       const transcript = await assemblyAI.transcripts.transcribe({
-        audio: file.path,
+        audio_url: uploadedFile.upload_url,  // Use the uploaded URL
         speaker_labels: true,
         speakers_expected: 2,
-        language_detection: true,
-        audio_channels: 2  // Try dual-channel speaker detection
+        language_detection: true
       });
 
       // Poll for completion

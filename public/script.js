@@ -125,6 +125,87 @@ function updateFileList() {
     processBtn.disabled = selectedFiles.length === 0;
 }
 
+// Steve Jobs quotes for loading screen
+const steveJobsQuotes = [
+    "Innovation distinguishes between a leader and a follower.",
+    "Stay hungry, stay foolish.",
+    "Design is not just what it looks like and feels like. Design is how it works.",
+    "Your time is limited, don't waste it living someone else's life.",
+    "Great things in business are never done by one person; they're done by a team of people.",
+    "The people who are crazy enough to think they can change the world are the ones who do.",
+    "Quality is more important than quantity. One home run is much better than two doubles.",
+    "Being the richest man in the cemetery doesn't matter to me. Going to bed at night saying we've done something wonderful, that's what matters to me.",
+    "I think the things you most regret in life are things you didn't do. What you really regret was never asking that girl to dance.",
+    "Remembering that you are going to die is the best way I know to avoid the trap of thinking you have something to lose."
+];
+
+let quoteInterval;
+let progressInterval;
+
+function getRandomQuote() {
+    return steveJobsQuotes[Math.floor(Math.random() * steveJobsQuotes.length)];
+}
+
+function updateLoadingStage(stageId, status) {
+    const stage = document.getElementById(stageId);
+    if (stage) {
+        const statusSpan = stage.querySelector('.stage-status');
+        if (status === 'active') {
+            stage.classList.add('active');
+            statusSpan.textContent = '⏳';
+        } else if (status === 'completed') {
+            stage.classList.remove('active');
+            stage.classList.add('completed');
+            statusSpan.textContent = '✅';
+        }
+    }
+}
+
+function updateProgress(percentage) {
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    if (progressFill) progressFill.style.width = `${percentage}%`;
+    if (progressText) progressText.textContent = `${percentage}%`;
+}
+
+function startLoadingAnimations() {
+    // Start quote rotation
+    const quoteElement = document.getElementById('quoteText');
+    if (quoteElement) {
+        quoteElement.textContent = `"${getRandomQuote()}"`;
+        quoteInterval = setInterval(() => {
+            quoteElement.style.opacity = '0';
+            setTimeout(() => {
+                quoteElement.textContent = `"${getRandomQuote()}"`;
+                quoteElement.style.opacity = '1';
+            }, 300);
+        }, 4000);
+    }
+
+    // Simulate progress stages
+    updateLoadingStage('stage-upload', 'active');
+    updateProgress(0);
+
+    let progress = 0;
+    progressInterval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 95) progress = 95; // Don't complete until actual processing is done
+        updateProgress(Math.floor(progress));
+    }, 1000);
+}
+
+function stopLoadingAnimations() {
+    if (quoteInterval) clearInterval(quoteInterval);
+    if (progressInterval) clearInterval(progressInterval);
+
+    // Mark all stages as completed
+    updateLoadingStage('stage-upload', 'completed');
+    updateLoadingStage('stage-transcribe', 'completed');
+    updateLoadingStage('stage-analyze', 'completed');
+    updateLoadingStage('stage-generate', 'completed');
+    updateProgress(100);
+}
+
 processBtn.addEventListener('click', async () => {
     if (selectedFiles.length === 0) return;
 
@@ -145,11 +226,26 @@ processBtn.addEventListener('click', async () => {
     loading.style.display = 'flex';
     processBtn.disabled = true;
 
+    // Start loading animations
+    startLoadingAnimations();
+
     try {
+        // Update stage to uploading
+        setTimeout(() => {
+            updateLoadingStage('stage-upload', 'completed');
+            updateLoadingStage('stage-transcribe', 'active');
+            updateProgress(25);
+        }, 2000);
+
         const response = await fetch('/api/upload', {
             method: 'POST',
             body: formData
         });
+
+        // Update stage to analyzing
+        updateLoadingStage('stage-transcribe', 'completed');
+        updateLoadingStage('stage-analyze', 'active');
+        updateProgress(50);
 
         // Check if response is OK before trying to parse JSON
         if (!response.ok) {
@@ -164,25 +260,46 @@ processBtn.addEventListener('click', async () => {
                 // If not JSON, show the raw error
                 alert('Server error: ' + errorText.substring(0, 100));
             }
+            stopLoadingAnimations();
             return;
         }
+
+        // Update stage to generating
+        updateLoadingStage('stage-analyze', 'completed');
+        updateLoadingStage('stage-generate', 'active');
+        updateProgress(75);
 
         const data = await response.json();
 
         if (data.success) {
+            // Complete all stages
+            stopLoadingAnimations();
+
             currentFlowData = data;
             displayResults(data);
             resultsSection.style.display = 'block';
             resultsSection.scrollIntoView({ behavior: 'smooth' });
         } else {
+            stopLoadingAnimations();
             alert('Error: ' + data.error);
         }
     } catch (error) {
         console.error('Error details:', error);
+        stopLoadingAnimations();
         alert('Error processing files: ' + error.message);
     } finally {
         loading.style.display = 'none';
         processBtn.disabled = false;
+
+        // Reset stages for next use
+        ['stage-upload', 'stage-transcribe', 'stage-analyze', 'stage-generate'].forEach(stageId => {
+            const stage = document.getElementById(stageId);
+            if (stage) {
+                stage.classList.remove('active', 'completed');
+                const statusSpan = stage.querySelector('.stage-status');
+                if (statusSpan) statusSpan.textContent = '⏳';
+            }
+        });
     }
 });
 

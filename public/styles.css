@@ -723,7 +723,9 @@ button {
     }
 }
 
-/* Dark mode support (optional) */
+/* Dark mode support disabled for better diagram visibility */
+/* To enable dark mode, uncomment the section below */
+/*
 @media (prefers-color-scheme: dark) {
     :root {
         --white: #0a0a0a;
@@ -750,23 +752,8 @@ button {
     .upload-area:hover {
         background: var(--gray-200);
     }
-
-    #mermaidDiagram .node rect,
-    #mermaidDiagram .node polygon,
-    #mermaidDiagram .node circle,
-    #mermaidDiagram .node ellipse {
-        fill: var(--gray-100) !important;
-        stroke: var(--gray-700) !important;
-    }
-
-    #mermaidDiagram .node text {
-        fill: var(--gray-800) !important;
-    }
-
-    #mermaidDiagram .edgeLabel {
-        background-color: var(--gray-100) !important;
-    }
 }
+*/
 
 /* Saved Flows Section */
 .saved-flows-section {
@@ -891,4 +878,182 @@ button {
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto 20px;
+}
+/* Enhanced Loading Experience */
+.loading-content {
+    max-width: 600px;
+    width: 90%;
+    text-align: center;
+    padding: 40px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--gray-200);
+}
+
+.loading-animation {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 40px;
+}
+
+.pulse-ring {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 2px solid var(--black);
+    opacity: 0;
+    animation: pulse 3s ease-out infinite;
+}
+
+.pulse-ring:nth-child(1) { animation-delay: 0s; }
+.pulse-ring:nth-child(2) { animation-delay: 1s; }
+.pulse-ring:nth-child(3) { animation-delay: 2s; }
+
+@keyframes pulse {
+    0% { transform: scale(0.5); opacity: 1; }
+    100% { transform: scale(1.5); opacity: 0; }
+}
+
+.loading-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    background: var(--black);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: float 3s ease-in-out infinite;
+}
+
+.loading-icon svg {
+    width: 30px;
+    height: 30px;
+    stroke: white;
+    stroke-width: 2;
+}
+
+@keyframes float {
+    0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+    50% { transform: translate(-50%, -50%) translateY(-10px); }
+}
+
+.loading-stages {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 30px;
+    text-align: left;
+}
+
+.stage {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--gray-100);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    opacity: 0.5;
+}
+
+.stage.active {
+    background: var(--black);
+    color: white;
+    opacity: 1;
+    transform: translateX(10px);
+}
+
+.stage.completed { opacity: 1; }
+.stage.completed .stage-status { color: #10b981; }
+
+.stage-icon { font-size: 20px; }
+.stage-text { flex: 1; font-size: 14px; font-weight: 500; }
+.stage-status { font-size: 20px; }
+
+.progress-container { margin-bottom: 30px; }
+
+.progress-bar {
+    height: 8px;
+    background: var(--gray-200);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--black) 0%, var(--gray-700) 100%);
+    width: 0%;
+    transition: width 0.5s ease;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.progress-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-600);
+}
+
+.quote-container {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: var(--gray-100);
+    border-radius: 8px;
+    border-left: 4px solid var(--black);
+}
+
+.quote {
+    font-size: 16px;
+    font-style: italic;
+    color: var(--gray-700);
+    margin-bottom: 8px;
+    line-height: 1.5;
+    animation: fadeIn 0.5s ease;
+}
+
+.quote-author {
+    font-size: 14px;
+    color: var(--gray-500);
+    font-weight: 600;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.loading-note {
+    font-size: 13px;
+    color: var(--gray-600);
+    line-height: 1.5;
+}
+
+.loading-note strong {
+    color: var(--black);
+    font-weight: 600;
 }

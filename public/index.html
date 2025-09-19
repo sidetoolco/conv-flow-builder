@@ -71,8 +71,58 @@
         </div>
 
         <div class="loading" id="loading" style="display: none;">
-            <div class="spinner"></div>
-            <p>Processing conversations...</p>
+            <div class="loading-content">
+                <div class="loading-animation">
+                    <div class="pulse-ring"></div>
+                    <div class="pulse-ring"></div>
+                    <div class="pulse-ring"></div>
+                    <div class="loading-icon">
+                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M9 11l3 3L22 4"></path>
+                            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="loading-stages">
+                    <div class="stage" id="stage-upload">
+                        <span class="stage-icon">📤</span>
+                        <span class="stage-text">Uploading audio files...</span>
+                        <span class="stage-status">⏳</span>
+                    </div>
+                    <div class="stage" id="stage-transcribe">
+                        <span class="stage-icon">🎤</span>
+                        <span class="stage-text">Transcribing conversations...</span>
+                        <span class="stage-status">⏳</span>
+                    </div>
+                    <div class="stage" id="stage-analyze">
+                        <span class="stage-icon">🤖</span>
+                        <span class="stage-text">Analyzing with AI...</span>
+                        <span class="stage-status">⏳</span>
+                    </div>
+                    <div class="stage" id="stage-generate">
+                        <span class="stage-icon">📊</span>
+                        <span class="stage-text">Generating flow diagram...</span>
+                        <span class="stage-status">⏳</span>
+                    </div>
+                </div>
+
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p class="progress-text" id="progressText">0%</p>
+                </div>
+
+                <div class="quote-container">
+                    <p class="quote" id="quoteText">"Innovation distinguishes between a leader and a follower."</p>
+                    <p class="quote-author">— Steve Jobs</p>
+                </div>
+
+                <p class="loading-note">
+                    <strong>Please wait</strong> — This process typically takes 30-60 seconds depending on the length of your audio files.
+                </p>
+            </div>
         </div>
 
         <div class="saved-flows-section" id="savedFlowsSection" style="display: none;">

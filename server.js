@@ -650,7 +650,9 @@ function generateMermaidDiagram(flowData) {
       return 'flowchart LR\n    Start([Empty Flow])';
     }
 
-    let diagram = 'flowchart LR\n';
+    // Start with frontmatter config for theme
+    let diagram = `%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#ffffff','primaryTextColor':'#1e293b','primaryBorderColor':'#2563eb','lineColor':'#6b7280','secondaryColor':'#dbeafe','tertiaryColor':'#fef3c7','background':'#ffffff','darkMode':false,'fontFamily':'Inter, sans-serif'}}}%%\n`;
+    diagram += 'flowchart LR\n';
     const nodeMap = new Map();
     const validNodes = [];
     const nodeClasses = []; // Track which nodes get which class
@@ -658,12 +660,12 @@ function generateMermaidDiagram(flowData) {
     // Professional voice AI flow style definitions with proper Mermaid syntax
     diagram += '    %% Define styles for different node types\n';
     diagram += '    classDef default fill:#ffffff,stroke:#2563eb,stroke-width:2px,color:#1e293b\n';
-    diagram += '    classDef greeting fill:#dbeafe,stroke:#2563eb,stroke-width:3px,color:#1e40af\n';
+    diagram += '    classDef greeting fill:#dbeafe,stroke:#2563eb,stroke-width:3px,color:#1e40af,font-weight:bold\n';
     diagram += '    classDef verification fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#92400e\n';
     diagram += '    classDef main fill:#ffffff,stroke:#2563eb,stroke-width:2px,color:#1e293b\n';
-    diagram += '    classDef decision fill:#f3e8ff,stroke:#9333ea,stroke-width:3px,color:#581c87\n';
-    diagram += '    classDef success fill:#d1fae5,stroke:#10b981,stroke-width:3px,color:#14532d\n';
-    diagram += '    classDef failure fill:#fee2e2,stroke:#ef4444,stroke-width:3px,color:#7f1d1d\n';
+    diagram += '    classDef decision fill:#f3e8ff,stroke:#9333ea,stroke-width:3px,color:#581c87,font-weight:bold\n';
+    diagram += '    classDef success fill:#d1fae5,stroke:#10b981,stroke-width:3px,color:#14532d,font-weight:bold\n';
+    diagram += '    classDef failure fill:#fee2e2,stroke:#ef4444,stroke-width:3px,color:#7f1d1d,font-weight:bold\n';
     diagram += '    classDef farewell fill:#e0e7ff,stroke:#6366f1,stroke-width:2px,color:#312e81\n';
     diagram += '\n';
 

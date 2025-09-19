@@ -10,30 +10,66 @@ mermaid.initialize({
         curve: 'basis',
         rankSpacing: 80,
         nodeSpacing: 80,
-        padding: 20
+        padding: 20,
+        defaultRenderer: 'dagre'
     },
     themeVariables: {
+        // Core theme settings
+        darkMode: false,
+        background: '#ffffff',
+        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+        fontSize: '14px',
+
+        // Primary colors for main elements
         primaryColor: '#ffffff',
         primaryTextColor: '#1e293b',
         primaryBorderColor: '#2563eb',
-        lineColor: '#6b7280',
-        background: '#ffffff',
-        mainBkg: '#ffffff',
+
+        // Secondary colors for alternate elements
         secondaryColor: '#dbeafe',
+        secondaryTextColor: '#1e40af',
+        secondaryBorderColor: '#3b82f6',
+
+        // Tertiary colors for special elements
         tertiaryColor: '#fef3c7',
-        fontFamily: 'Inter, sans-serif',
-        fontSize: '14px',
-        darkMode: false,
-        // Node colors
+        tertiaryTextColor: '#92400e',
+        tertiaryBorderColor: '#f59e0b',
+
+        // Main background and text
+        mainBkg: '#ffffff',
+        textColor: '#1e293b',
+        lineColor: '#6b7280',
+
+        // Flowchart specific variables
+        nodeBorder: '#2563eb',
+        clusterBkg: '#f3f4f6',
+        clusterBorder: '#d1d5db',
+        defaultLinkColor: '#6b7280',
+        titleColor: '#111827',
+        edgeLabelBackground: '#ffffff',
+        nodeTextColor: '#1e293b',
+
+        // For different node types (used by classDef)
         classText: '#1e293b',
-        fillType0: '#ffffff',
-        fillType1: '#dbeafe',
-        fillType2: '#fef3c7',
-        fillType3: '#f3e8ff',
-        fillType4: '#d1fae5',
-        fillType5: '#fee2e2',
-        fillType6: '#e0e7ff',
-        fillType7: '#ffffff'
+
+        // User journey / fill types (for different node categories)
+        fillType0: '#ffffff',  // Default
+        fillType1: '#dbeafe',  // Greeting
+        fillType2: '#fef3c7',  // Verification
+        fillType3: '#f3e8ff',  // Decision
+        fillType4: '#d1fae5',  // Success
+        fillType5: '#fee2e2',  // Failure
+        fillType6: '#e0e7ff',  // Farewell
+        fillType7: '#f9fafb',  // Other
+
+        // Note colors (for annotations)
+        noteBkgColor: '#fef3c7',
+        noteTextColor: '#92400e',
+        noteBorderColor: '#f59e0b',
+
+        // Error colors
+        errorBkgColor: '#fee2e2',
+        errorTextColor: '#991b1b'
     }
 });
 

@@ -18,8 +18,13 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
+// Configure middleware with proper order
 app.use(cors());
-app.use(express.json());
+
+// Increase payload limits for large audio files
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
 app.use(express.static('public'));
 
 const uploadsDir = path.join('/tmp', 'uploads');
@@ -65,7 +70,9 @@ const upload = multer({
     }
   },
   limits: {
-    fileSize: 100 * 1024 * 1024  // 100MB limit
+    fileSize: 50 * 1024 * 1024,  // 50MB per file
+    fieldSize: 50 * 1024 * 1024,  // 50MB field size
+    files: 10  // Max 10 files
   }
 });
 

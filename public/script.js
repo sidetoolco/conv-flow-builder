@@ -67,6 +67,16 @@ function handleFiles(files) {
         return;
     }
 
+    // Check file sizes
+    const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB per file for safety on Vercel
+    const oversizedFiles = audioFiles.filter(file => file.size > MAX_FILE_SIZE);
+
+    if (oversizedFiles.length > 0) {
+        const names = oversizedFiles.map(f => `${f.name} (${(f.size / 1024 / 1024).toFixed(2)} MB)`).join(', ');
+        alert(`Files too large (max 25MB each): ${names}\n\nPlease compress or trim your audio files.`);
+        return;
+    }
+
     selectedFiles = [...selectedFiles, ...audioFiles];
     updateFileList();
 }
@@ -98,6 +108,15 @@ function updateFileList() {
 processBtn.addEventListener('click', async () => {
     if (selectedFiles.length === 0) return;
 
+    // Check total size before upload
+    const totalSize = selectedFiles.reduce((sum, file) => sum + file.size, 0);
+    const maxTotalSize = 40 * 1024 * 1024; // 40MB total for all files
+
+    if (totalSize > maxTotalSize) {
+        alert(`Total file size too large: ${(totalSize / 1024 / 1024).toFixed(2)} MB\n\nMaximum total size is 40MB. Please use fewer or smaller files.`);
+        return;
+    }
+
     const formData = new FormData();
     selectedFiles.forEach(file => {
         formData.append('audioFiles', file);
@@ -112,6 +131,22 @@ processBtn.addEventListener('click', async () => {
             body: formData
         });
 
+        // Check if response is OK before trying to parse JSON
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Server error:', response.status, errorText);
+
+            // Check if it's a JSON error response
+            try {
+                const errorData = JSON.parse(errorText);
+                alert('Error: ' + (errorData.error || errorData.message || 'Server error'));
+            } catch (e) {
+                // If not JSON, show the raw error
+                alert('Server error: ' + errorText.substring(0, 100));
+            }
+            return;
+        }
+
         const data = await response.json();
 
         if (data.success) {
@@ -123,6 +158,7 @@ processBtn.addEventListener('click', async () => {
             alert('Error: ' + data.error);
         }
     } catch (error) {
+        console.error('Error details:', error);
         alert('Error processing files: ' + error.message);
     } finally {
         loading.style.display = 'none';

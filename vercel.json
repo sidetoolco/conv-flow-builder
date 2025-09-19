@@ -19,5 +19,11 @@
       "src": "/(.*)",
       "dest": "/public/$1"
     }
-  ]
+  ],
+  "functions": {
+    "server.js": {
+      "maxDuration": 60,
+      "memory": 1024
+    }
+  }
 }

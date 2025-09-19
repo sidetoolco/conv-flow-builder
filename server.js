@@ -338,14 +338,13 @@ IMPORTANT:
 
     let response;
     try {
-      // Try GPT-4 first
+      // Try GPT-4 first (without json_object format which might cause issues)
       response = await openai.chat.completions.create({
         model: 'gpt-4-0125-preview',  // Using GPT-4 Turbo latest stable version
         messages: [
-          { role: 'system', content: 'You are an expert voice AI agent designer. You analyze real human agent conversations and create detailed blueprints for AI voice agents that can replicate the conversation flow, including all decision points, error handling, and natural conversation patterns. You understand both the technical requirements and the conversational nuances needed for effective voice AI. Always respond with valid JSON.' },
-          { role: 'user', content: prompt }
+          { role: 'system', content: 'You are an expert voice AI agent designer. You must respond ONLY with valid JSON, no other text.' },
+          { role: 'user', content: prompt + '\n\nRemember: Respond ONLY with valid JSON.' }
         ],
-        response_format: { type: 'json_object' },
         temperature: 0.3,  // Lower temperature for more consistent output
         max_tokens: 4000  // Ensure we have enough tokens for response
       });
@@ -356,12 +355,11 @@ IMPORTANT:
       // Fallback to GPT-3.5
       try {
         response = await openai.chat.completions.create({
-          model: 'gpt-3.5-turbo-0125',  // Fallback to GPT-3.5
+          model: 'gpt-3.5-turbo',  // Use standard GPT-3.5
           messages: [
-            { role: 'system', content: 'You are an expert at analyzing conversations and creating voice agent flows. Always respond with valid JSON.' },
-            { role: 'user', content: prompt.substring(0, 3000) }  // Shorter prompt for GPT-3.5
+            { role: 'system', content: 'You are an expert at analyzing conversations. Respond ONLY with valid JSON.' },
+            { role: 'user', content: prompt.substring(0, 3000) + '\n\nRespond ONLY with valid JSON.' }  // Shorter prompt for GPT-3.5
           ],
-          response_format: { type: 'json_object' },
           temperature: 0.3,
           max_tokens: 2000
         });
@@ -369,6 +367,14 @@ IMPORTANT:
       } catch (gpt35Error) {
         console.error('Both GPT-4 and GPT-3.5 failed');
         console.error('GPT-3.5 error:', gpt35Error.message);
+        console.error('Error response:', gpt35Error.response?.data);
+        console.error('Error status:', gpt35Error.response?.status);
+
+        // Log the API key status for debugging (safely)
+        const apiKeySet = !!process.env.OPENAI_API_KEY;
+        const keyPrefix = process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 10) : 'Not set';
+        console.error('OpenAI API Key configured:', apiKeySet, 'Prefix:', keyPrefix);
+
         throw gpt35Error;
       }
     }

@@ -22,12 +22,12 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-const uploadsDir = path.join(__dirname, 'uploads');
+const uploadsDir = path.join('/tmp', 'uploads');
 fs.mkdir(uploadsDir, { recursive: true }).catch(console.error);
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/');
+    cb(null, '/tmp/uploads/');
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + '-' + file.originalname);
@@ -163,6 +163,10 @@ function generateMermaidDiagram(flowData) {
   return diagram;
 }
 
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
-});
+if (process.env.VERCEL) {
+  module.exports = app;
+} else {
+  app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+  });
+}

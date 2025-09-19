@@ -178,14 +178,14 @@ app.post('/api/upload', upload.array('audioFiles', 10), async (req, res) => {
 });
 
 async function analyzeConversationFlow(transcriptions) {
+  let transcriptText = '';
+  let hasSpeakerSeparation = false;
+
   try {
     console.log('Analyzing conversation flow for', transcriptions.length, 'transcription(s)');
 
     // Check if we have utterances with speaker labels
     const allUtterances = transcriptions.flatMap(t => t.utterances || []);
-
-    let transcriptText = '';
-    let hasSpeakerSeparation = false;
 
     if (allUtterances.length > 0) {
       // Check if we have actual speaker separation (not all same speaker)

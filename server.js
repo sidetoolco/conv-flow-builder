@@ -28,6 +28,17 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 app.use(express.static('public'));
 
+// Test endpoint to check environment variables
+app.get('/api/test', (req, res) => {
+  res.json({
+    assemblyAI: process.env.ASSEMBLYAI_API_KEY ? 'Set' : 'Missing',
+    openAI: process.env.OPENAI_API_KEY ? 'Set' : 'Missing',
+    openAIKeyStart: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 10) : 'Not set',
+    environment: process.env.NODE_ENV || 'development',
+    serverTime: new Date().toISOString()
+  });
+});
+
 const uploadsDir = path.join('/tmp', 'uploads');
 fs.mkdir(uploadsDir, { recursive: true }).catch(console.error);
 

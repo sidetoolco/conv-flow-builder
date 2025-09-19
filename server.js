@@ -350,12 +350,13 @@ function generateMermaidDiagram(flowData) {
     const nodeMap = new Map();
     const validNodes = [];
 
-    // Style definitions for different node types
-    diagram += '    classDef greeting fill:#e0f2fe,stroke:#0284c7,stroke-width:2px\n';
-    diagram += '    classDef question fill:#fef3c7,stroke:#d97706,stroke-width:2px\n';
-    diagram += '    classDef decision fill:#fce7f3,stroke:#ec4899,stroke-width:2px\n';
-    diagram += '    classDef confirmation fill:#d1fae5,stroke:#059669,stroke-width:2px\n';
-    diagram += '    classDef farewell fill:#e9d5ff,stroke:#9333ea,stroke-width:2px\n';
+    // Minimalist black and white style definitions
+    diagram += '    classDef default fill:#ffffff,stroke:#000000,stroke-width:2px,color:#000000\n';
+    diagram += '    classDef greeting fill:#f8f8f8,stroke:#000000,stroke-width:3px,color:#000000\n';
+    diagram += '    classDef question fill:#ffffff,stroke:#000000,stroke-width:2px,stroke-dasharray: 5 5,color:#000000\n';
+    diagram += '    classDef decision fill:#f0f0f0,stroke:#000000,stroke-width:2px,color:#000000\n';
+    diagram += '    classDef confirmation fill:#ffffff,stroke:#000000,stroke-width:3px,color:#000000\n';
+    diagram += '    classDef farewell fill:#e8e8e8,stroke:#000000,stroke-width:2px,color:#000000\n';
     diagram += '\n';
 
     // First pass: create valid node IDs and filter valid nodes

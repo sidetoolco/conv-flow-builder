@@ -3,11 +3,21 @@ let currentFlowData = null;
 
 mermaid.initialize({
     startOnLoad: true,
-    theme: 'default',
+    theme: 'neutral',
     flowchart: {
         useMaxWidth: true,
         htmlLabels: true,
-        curve: 'basis'
+        curve: 'linear'
+    },
+    themeVariables: {
+        primaryColor: '#ffffff',
+        primaryTextColor: '#000000',
+        primaryBorderColor: '#000000',
+        lineColor: '#333333',
+        background: '#ffffff',
+        mainBkg: '#ffffff',
+        secondaryColor: '#f8f8f8',
+        tertiaryColor: '#eeeeee'
     }
 });
 
@@ -144,23 +154,25 @@ async function displayDiagram(mermaidCode) {
         graphDiv.textContent = mermaidCode;
         container.appendChild(graphDiv);
 
-        // Re-initialize mermaid with enhanced settings
+        // Re-initialize mermaid with monochrome settings
         await mermaid.initialize({
             startOnLoad: true,
-            theme: 'default',
+            theme: 'neutral',
             flowchart: {
                 useMaxWidth: true,
                 htmlLabels: true,
-                curve: 'basis',
+                curve: 'linear',
                 padding: 15
             },
             themeVariables: {
-                primaryColor: '#667eea',
-                primaryTextColor: '#fff',
-                primaryBorderColor: '#5a67d8',
-                lineColor: '#94a3b8',
-                secondaryColor: '#fbbf24',
-                tertiaryColor: '#10b981'
+                primaryColor: '#ffffff',
+                primaryTextColor: '#000000',
+                primaryBorderColor: '#000000',
+                lineColor: '#333333',
+                background: '#ffffff',
+                mainBkg: '#ffffff',
+                secondaryColor: '#f8f8f8',
+                tertiaryColor: '#eeeeee'
             }
         });
 

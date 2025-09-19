@@ -28,6 +28,10 @@ const fileList = document.getElementById('fileList');
 const processBtn = document.getElementById('processBtn');
 const resultsSection = document.getElementById('resultsSection');
 const loading = document.getElementById('loading');
+const viewSavedBtn = document.getElementById('viewSavedBtn');
+const savedFlowsSection = document.getElementById('savedFlowsSection');
+const closeSavedFlows = document.getElementById('closeSavedFlows');
+const savedFlowsList = document.getElementById('savedFlowsList');
 
 uploadArea.addEventListener('click', () => fileInput.click());
 browseBtn.addEventListener('click', (e) => {
@@ -515,3 +519,138 @@ document.getElementById('exportPromptsPDF').addEventListener('click', () => {
 
     pdf.save('voice-agent-prompts.pdf');
 });
+
+// Saved Flows functionality
+viewSavedBtn.addEventListener('click', async () => {
+    savedFlowsSection.style.display = 'flex';
+    await loadSavedFlows();
+});
+
+closeSavedFlows.addEventListener('click', () => {
+    savedFlowsSection.style.display = 'none';
+});
+
+savedFlowsSection.addEventListener('click', (e) => {
+    if (e.target === savedFlowsSection) {
+        savedFlowsSection.style.display = 'none';
+    }
+});
+
+async function loadSavedFlows() {
+    savedFlowsList.innerHTML = `
+        <div class="loading-saved">
+            <div class="spinner"></div>
+            <p>Loading saved flows...</p>
+        </div>
+    `;
+
+    try {
+        const response = await fetch('/api/flows?limit=20');
+        const data = await response.json();
+
+        if (data.success && data.flows) {
+            displaySavedFlows(data.flows);
+        } else {
+            savedFlowsList.innerHTML = `
+                <div class="error-message">
+                    <p>Failed to load saved flows</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading saved flows:', error);
+        savedFlowsList.innerHTML = `
+            <div class="error-message">
+                <p>Error loading saved flows: ${error.message}</p>
+            </div>
+        `;
+    }
+}
+
+function displaySavedFlows(flows) {
+    if (flows.length === 0) {
+        savedFlowsList.innerHTML = `
+            <div class="no-flows">
+                <p>No saved flows yet. Process some conversations to get started!</p>
+            </div>
+        `;
+        return;
+    }
+
+    savedFlowsList.innerHTML = flows.map(flow => {
+        const date = new Date(flow.created_at).toLocaleDateString();
+        const nodeCount = flow.metadata?.node_count || 0;
+        const edgeCount = flow.metadata?.edge_count || 0;
+        const languages = flow.metadata?.languages?.join(', ') || 'Unknown';
+
+        return `
+            <div class="flow-item" data-flow-id="${flow.id}">
+                <h3>${flow.name}</h3>
+                <p>${flow.description}</p>
+                <div class="flow-meta">
+                    <span>📅 ${date}</span>
+                    <span>🔄 ${nodeCount} nodes</span>
+                    <span>↔️ ${edgeCount} edges</span>
+                    <span>🌐 ${languages}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Add click handlers to flow items
+    document.querySelectorAll('.flow-item').forEach(item => {
+        item.addEventListener('click', async () => {
+            const flowId = item.dataset.flowId;
+            await loadFlow(flowId);
+        });
+    });
+}
+
+async function loadFlow(flowId) {
+    loading.style.display = 'flex';
+    savedFlowsSection.style.display = 'none';
+
+    try {
+        const response = await fetch(`/api/flows/${flowId}`);
+        const data = await response.json();
+
+        if (data.success && data.flow) {
+            // Display the loaded flow
+            currentFlowData = {
+                success: true,
+                transcriptions: data.flow.transcriptions,
+                flowData: data.flow.flow_data,
+                flowId: flowId
+            };
+
+            displayResults(currentFlowData);
+
+            // Show success message
+            const successMsg = document.createElement('div');
+            successMsg.className = 'success-message';
+            successMsg.textContent = `Loaded saved flow: ${data.flow.name}`;
+            successMsg.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: var(--black);
+                color: var(--white);
+                padding: 15px 20px;
+                border-radius: var(--border-radius);
+                z-index: 1001;
+            `;
+            document.body.appendChild(successMsg);
+
+            setTimeout(() => {
+                successMsg.remove();
+            }, 3000);
+        } else {
+            alert('Failed to load flow');
+        }
+    } catch (error) {
+        console.error('Error loading flow:', error);
+        alert('Error loading flow: ' + error.message);
+    } finally {
+        loading.style.display = 'none';
+    }
+}

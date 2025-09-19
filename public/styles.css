@@ -49,6 +49,7 @@ header {
     margin-bottom: 60px;
     padding-bottom: 40px;
     border-bottom: 1px solid var(--gray-200);
+    position: relative;
 }
 
 header h1 {
@@ -64,6 +65,29 @@ header p {
     color: var(--gray-600);
     font-weight: 400;
     letter-spacing: 0.01em;
+}
+
+.header-nav {
+    margin-top: 20px;
+}
+
+.nav-btn {
+    background: var(--white);
+    color: var(--black);
+    border: 2px solid var(--black);
+    padding: 10px 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.nav-btn:hover {
+    background: var(--black);
+    color: var(--white);
 }
 
 .upload-section {
@@ -666,4 +690,129 @@ button {
     #mermaidDiagram .edgeLabel {
         background-color: var(--gray-100) !important;
     }
+}
+
+/* Saved Flows Section */
+.saved-flows-section {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.saved-flows-section > div {
+    background: var(--white);
+    width: 100%;
+    max-width: 900px;
+    max-height: 80vh;
+    border-radius: var(--border-radius-lg);
+    border: 2px solid var(--black);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.saved-flows-header {
+    padding: 20px;
+    border-bottom: 2px solid var(--gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.saved-flows-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+}
+
+.btn-close:hover {
+    background: var(--gray-100);
+}
+
+.saved-flows-list {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.flow-item {
+    padding: 20px;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--border-radius);
+    margin-bottom: 15px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.flow-item:hover {
+    border-color: var(--black);
+    background: var(--gray-100);
+}
+
+.flow-item h3 {
+    margin: 0 0 8px 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+}
+
+.flow-item p {
+    margin: 0 0 12px 0;
+    color: var(--gray-600);
+    font-size: 0.875rem;
+}
+
+.flow-meta {
+    display: flex;
+    gap: 20px;
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.flow-meta span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.loading-saved {
+    text-align: center;
+    padding: 40px;
+}
+
+.loading-saved .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--gray-300);
+    border-top-color: var(--black);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
 }

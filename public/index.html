@@ -15,6 +15,9 @@
         <header>
             <h1>Conversation Flow Builder</h1>
             <p>Upload conversation recordings to generate AI agent flow diagrams and prompts</p>
+            <nav class="header-nav">
+                <button class="nav-btn" id="viewSavedBtn">View Saved Flows</button>
+            </nav>
         </header>
 
         <div class="upload-section">
@@ -70,6 +73,19 @@
         <div class="loading" id="loading" style="display: none;">
             <div class="spinner"></div>
             <p>Processing conversations...</p>
+        </div>
+
+        <div class="saved-flows-section" id="savedFlowsSection" style="display: none;">
+            <div class="saved-flows-header">
+                <h2>Saved Conversation Flows</h2>
+                <button class="btn-close" id="closeSavedFlows">×</button>
+            </div>
+            <div class="saved-flows-list" id="savedFlowsList">
+                <div class="loading-saved">
+                    <div class="spinner"></div>
+                    <p>Loading saved flows...</p>
+                </div>
+            </div>
         </div>
     </div>
 

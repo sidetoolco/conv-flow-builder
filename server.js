@@ -6,7 +6,14 @@ const path = require('path');
 const fs = require('fs').promises;
 const { AssemblyAI } = require('assemblyai');
 const OpenAI = require('openai');
-// Updated with file size fixes for Vercel deployment
+const {
+  storeConversationFlow,
+  uploadAudioFile,
+  getConversationFlows,
+  getConversationFlow,
+  ensureStorageBucket
+} = require('./lib/supabase');
+// Updated with Supabase integration for persistent storage
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -34,9 +41,62 @@ app.get('/api/test', (req, res) => {
     assemblyAI: process.env.ASSEMBLYAI_API_KEY ? 'Set' : 'Missing',
     openAI: process.env.OPENAI_API_KEY ? 'Set' : 'Missing',
     openAIKeyStart: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 10) : 'Not set',
+    supabase: process.env.SUPABASE_URL ? 'Set' : 'Missing',
     environment: process.env.NODE_ENV || 'development',
     serverTime: new Date().toISOString()
   });
+});
+
+// API endpoint to get all saved conversation flows
+app.get('/api/flows', async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const result = await getConversationFlows(limit);
+
+    if (result.success) {
+      res.json({
+        success: true,
+        flows: result.flows
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching flows:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// API endpoint to get a single conversation flow with details
+app.get('/api/flows/:id', async (req, res) => {
+  try {
+    const flowId = req.params.id;
+    const result = await getConversationFlow(flowId);
+
+    if (result.success) {
+      res.json({
+        success: true,
+        flow: result.flow
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        error: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error fetching flow:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
 const uploadsDir = path.join('/tmp', 'uploads');
@@ -97,7 +157,11 @@ app.post('/api/upload', upload.array('audioFiles', 10), async (req, res) => {
       throw new Error('No files received in upload request');
     }
 
+    // Ensure storage bucket exists
+    await ensureStorageBucket();
+
     const transcriptions = [];
+    const audioFileData = [];
 
     for (const file of req.files) {
       console.log(`Processing file: ${file.filename}`);
@@ -159,7 +223,13 @@ app.post('/api/upload', upload.array('audioFiles', 10), async (req, res) => {
 
       const finalTranscript = completedTranscript;
 
-      await fs.unlink(file.path);
+      // Keep file data for Supabase upload
+      audioFileData.push({
+        path: file.path,
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size
+      });
 
       transcriptions.push({
         filename: file.originalname,
@@ -171,10 +241,33 @@ app.post('/api/upload', upload.array('audioFiles', 10), async (req, res) => {
 
     const flowData = await analyzeConversationFlow(transcriptions);
 
+    // Store the conversation flow in Supabase
+    const storeResult = await storeConversationFlow(
+      flowData,
+      transcriptions,
+      flowData.mermaidDiagram
+    );
+
+    // Upload audio files to Supabase Storage
+    if (storeResult.success && storeResult.flowId) {
+      for (const audioFile of audioFileData) {
+        await uploadAudioFile(audioFile, storeResult.flowId);
+        // Clean up temp file after upload
+        await fs.unlink(audioFile.path);
+      }
+    } else {
+      // Clean up temp files even if storage failed
+      for (const audioFile of audioFileData) {
+        await fs.unlink(audioFile.path);
+      }
+    }
+
     res.json({
       success: true,
       transcriptions,
-      flowData
+      flowData,
+      flowId: storeResult.flowId || null,
+      storageResult: storeResult
     });
 
   } catch (error) {

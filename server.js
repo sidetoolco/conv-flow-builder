@@ -98,19 +98,22 @@ ${allUtterances.map(u => `Speaker ${u.speaker}: ${u.text}`).join('\n')}
 Please provide:
 1. A conversation flow in JSON format with nodes and edges
 2. For each node, include:
-   - id: unique identifier
+   - id: unique identifier (use simple alphanumeric IDs like "node1", "node2", etc.)
    - type: "greeting", "question", "response", "confirmation", "farewell", etc.
    - speaker: who speaks at this node
-   - content: what is said
+   - content: what is said (keep it concise, under 50 characters)
    - prompt: the AI prompt to use at this node for a voice agent
    - nextSteps: array of possible next node ids
+
+3. For edges, use format: {"from": "node1", "to": "node2"}
 
 Format the response as JSON with structure:
 {
   "nodes": [...],
   "edges": [...],
   "prompts": {
-    "nodeId": "prompt text"
+    "node1": "prompt text",
+    "node2": "prompt text"
   }
 }`;
 
@@ -144,39 +147,97 @@ Format the response as JSON with structure:
 }
 
 function generateMermaidDiagram(flowData) {
-  let diagram = 'graph TD\n';
+  try {
+    // Validate input data
+    if (!flowData || !flowData.nodes || !Array.isArray(flowData.nodes)) {
+      console.error('Invalid flow data structure');
+      return 'graph TD\n    Start[No data available]';
+    }
 
-  flowData.nodes.forEach(node => {
-    // Escape special characters for Mermaid
-    const label = (node.content || '')
-      .replace(/"/g, "'")
-      .replace(/\n/g, ' ')
-      .replace(/[{}]/g, '')
-      .trim();
+    let diagram = 'graph TD\n';
+    const processedNodes = new Set();
 
-    const truncatedLabel = label.length > 50
-      ? label.substring(0, 47) + '...'
-      : label;
+    // Process nodes
+    flowData.nodes.forEach((node, index) => {
+      if (!node || !node.id) {
+        console.warn('Skipping invalid node:', node);
+        return;
+      }
 
-    // Use safe node ID
-    const nodeId = node.id.replace(/[^a-zA-Z0-9_]/g, '_');
+      // Create safe node ID - must start with letter, use index as fallback
+      const nodeId = node.id.toString()
+        .replace(/[^a-zA-Z0-9]/g, '_')
+        .replace(/^[^a-zA-Z]/, 'N');
 
-    const shape = node.type === 'question' ?
-                  `${nodeId}[?${truncatedLabel}?]` :
-                  node.type === 'greeting' || node.type === 'farewell' ?
-                  `${nodeId}((${truncatedLabel}))` :
-                  `${nodeId}[${truncatedLabel}]`;
+      // Fallback to index-based ID if needed
+      const safeNodeId = nodeId || `node_${index}`;
 
-    diagram += `    ${shape}\n`;
-  });
+      // Skip duplicate nodes
+      if (processedNodes.has(safeNodeId)) {
+        return;
+      }
+      processedNodes.add(safeNodeId);
 
-  flowData.edges.forEach(edge => {
-    const fromId = edge.from.replace(/[^a-zA-Z0-9_]/g, '_');
-    const toId = edge.to.replace(/[^a-zA-Z0-9_]/g, '_');
-    diagram += `    ${fromId} --> ${toId}\n`;
-  });
+      // Escape and clean label text
+      const content = (node.content || 'Empty')
+        .replace(/[\r\n]+/g, ' ')
+        .replace(/"/g, "'")
+        .replace(/`/g, "'")
+        .replace(/\[/g, '(')
+        .replace(/\]/g, ')')
+        .replace(/[{}]/g, '')
+        .replace(/[<>]/g, '')
+        .trim();
 
-  return diagram;
+      const truncatedLabel = content.length > 45
+        ? content.substring(0, 42) + '...'
+        : content;
+
+      // Use simple shapes to avoid syntax issues
+      let shape;
+      if (node.type === 'greeting' || node.type === 'farewell') {
+        shape = `${safeNodeId}("${truncatedLabel}")`;
+      } else if (node.type === 'question') {
+        shape = `${safeNodeId}{"${truncatedLabel}"}`;
+      } else {
+        shape = `${safeNodeId}["${truncatedLabel}"]`;
+      }
+
+      diagram += `    ${shape}\n`;
+    });
+
+    // Process edges
+    if (flowData.edges && Array.isArray(flowData.edges)) {
+      flowData.edges.forEach(edge => {
+        if (!edge || !edge.from || !edge.to) {
+          console.warn('Skipping invalid edge:', edge);
+          return;
+        }
+
+        const fromId = edge.from.toString()
+          .replace(/[^a-zA-Z0-9]/g, '_')
+          .replace(/^[^a-zA-Z]/, 'N');
+        const toId = edge.to.toString()
+          .replace(/[^a-zA-Z0-9]/g, '_')
+          .replace(/^[^a-zA-Z]/, 'N');
+
+        // Only add edge if both nodes exist
+        if (processedNodes.has(fromId) && processedNodes.has(toId)) {
+          diagram += `    ${fromId} --> ${toId}\n`;
+        }
+      });
+    }
+
+    // Add a default node if diagram is empty
+    if (processedNodes.size === 0) {
+      diagram += '    Start[Start Conversation]\n';
+    }
+
+    return diagram;
+  } catch (error) {
+    console.error('Error generating Mermaid diagram:', error);
+    return 'graph TD\n    Error[Error generating diagram]';
+  }
 }
 
 if (process.env.VERCEL) {

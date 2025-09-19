@@ -396,52 +396,73 @@ async function analyzeConversationFlow(transcriptions) {
     }
   }
 
-  const prompt = `Analyze this conversation transcript and create a comprehensive voice AI agent blueprint with detailed conversation flow.
+  const prompt = `Analyze this conversation transcript and create a structured voice AI agent flow following industry best practices.
 
 ${!hasSpeakerSeparation ? 'NOTE: This transcript does not have speaker separation. Please analyze the content to identify conversation turns between agent and customer based on context clues like greetings, questions, confirmations, etc.' : ''}
 
 Transcript:
 ${transcriptText}
 
-Create a DETAILED voice AI agent blueprint. For each conversation node:
+Create a PROFESSIONAL voice AI agent flow with these REQUIRED components:
 
-1. Extract the EXACT agent behavior and speaking patterns
-2. Include decision logic and branching based on customer responses
-3. Capture tone, pauses, and conversation tactics
-4. Include error handling and fallback responses
+1. GREETING & IDENTITY VERIFICATION
+   - Professional greeting with company/agent name
+   - Identity confirmation (name, account, reference number, etc.)
+   - Branch: If not confirmed → transfer or end call
 
-Provide a JSON structure with:
+2. MAIN PURPOSE/TOPIC
+   - State the reason for the call clearly
+   - Present key information (payment amount, appointment, service, etc.)
+   - Listen for customer acknowledgment
+
+3. CUSTOMER RESPONSE BRANCHES
+   Based on the conversation, create decision branches for common responses:
+   - Acceptance/Agreement → Confirm details and next steps
+   - Rejection/Decline → Handle objection or schedule callback
+   - Request for information → Provide details
+   - Already completed → Verify and thank
+   - Partial/Alternative → Negotiate or offer options
+   - Unclear/No response → Retry or clarify
+
+4. CLOSURE
+   - Summarize agreed actions
+   - Thank the customer
+   - Professional sign-off
+
+Return a JSON structure with:
 
 "nodes": [
   {
-    "id": "node1",
-    "type": "greeting"/"question"/"confirmation"/"decision"/"farewell",
-    "speaker": "agent"/"customer",
-    "content": "Brief description (max 30 chars)",
-    "fullPrompt": "Complete voice agent instruction including: What to say, how to say it, what to listen for, and next actions",
-    "examples": ["Example phrases the agent should use"],
-    "listenFor": ["Keywords or patterns to detect in customer response"],
+    "id": "start",
+    "type": "greeting",
+    "speaker": "agent",
+    "content": "Greeting & Verify Identity",
+    "fullPrompt": "Hello, this is [Agent Name] from [Company]. May I speak with [Customer Name]? I'm calling regarding [Purpose].",
+    "examples": ["Hello, this is Sarah from ABC Company", "Good morning, am I speaking with John Smith?"],
+    "listenFor": ["yes", "speaking", "that's me", "no", "wrong number"],
     "nextActions": {
-      "positive": "nodeX",
-      "negative": "nodeY",
-      "unclear": "nodeZ"
+      "confirmed": "main_purpose",
+      "denied": "end_not_verified",
+      "unclear": "retry_identity"
     },
-    "timeout": seconds to wait for response,
-    "retryPrompt": "What to say if no response"
+    "timeout": 5,
+    "retryPrompt": "I'm sorry, could you confirm if I'm speaking with [Customer Name]?"
   }
 ],
 "edges": [
-  {"from": "node1", "to": "node2", "condition": "when customer says yes/agrees"}
+  {"from": "start", "to": "main_purpose", "condition": "Identity Confirmed"},
+  {"from": "start", "to": "end_not_verified", "condition": "Not Customer"}
 ],
-"globalInstructions": "Overall agent personality and behavior guidelines",
-"errorHandling": "What to do when conversation goes off-script"
+"globalInstructions": "Maintain professional tone. Speak clearly at moderate pace. Allow pauses for customer responses.",
+"errorHandling": "If customer becomes upset or requests supervisor, offer to transfer or schedule callback."
 
-IMPORTANT:
-- Create comprehensive nodes that capture the FULL conversation logic
-- Include at least 5-10 nodes to represent the complete flow
-- Each node's fullPrompt should be self-contained instructions for the voice AI
-- Include decision branches and error handling
-- Extract actual phrases and patterns from the transcript`;
+CRITICAL REQUIREMENTS:
+- ALWAYS start with greeting and identity verification
+- Create clear decision branches based on customer responses
+- Each node must have specific prompts and listening keywords
+- Include proper error handling and fallback options
+- End gracefully regardless of outcome
+- Extract actual patterns and phrases from the transcript`;
 
   try {
     console.log('Sending request to OpenAI...');
@@ -621,25 +642,27 @@ function generateMermaidDiagram(flowData) {
     // Validate input data
     if (!flowData || !flowData.nodes || !Array.isArray(flowData.nodes)) {
       console.error('Invalid flow data structure');
-      return 'graph TD\n    Start[Start]';
+      return 'flowchart TD\n    Start[Start: No Flow Available]';
     }
 
     // If no nodes, return simple diagram
     if (flowData.nodes.length === 0) {
-      return 'graph TD\n    Start[Start]';
+      return 'flowchart TD\n    Start[Start: Empty Flow]';
     }
 
-    let diagram = 'graph TD\n';
+    let diagram = 'flowchart TD\n';
     const nodeMap = new Map();
     const validNodes = [];
 
-    // Minimalist black and white style definitions
-    diagram += '    classDef default fill:#ffffff,stroke:#000000,stroke-width:2px,color:#000000\n';
-    diagram += '    classDef greeting fill:#f8f8f8,stroke:#000000,stroke-width:3px,color:#000000\n';
-    diagram += '    classDef question fill:#ffffff,stroke:#000000,stroke-width:2px,stroke-dasharray: 5 5,color:#000000\n';
-    diagram += '    classDef decision fill:#f0f0f0,stroke:#000000,stroke-width:2px,color:#000000\n';
-    diagram += '    classDef confirmation fill:#ffffff,stroke:#000000,stroke-width:3px,color:#000000\n';
-    diagram += '    classDef farewell fill:#e8e8e8,stroke:#000000,stroke-width:2px,color:#000000\n';
+    // Professional voice AI flow style definitions
+    diagram += '    classDef default fill:#ffffff,stroke:#2563eb,stroke-width:2px,color:#1e293b\n';
+    diagram += '    classDef greeting fill:#dbeafe,stroke:#2563eb,stroke-width:3px,color:#1e293b\n';
+    diagram += '    classDef verification fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#1e293b\n';
+    diagram += '    classDef main fill:#ffffff,stroke:#2563eb,stroke-width:2px,color:#1e293b\n';
+    diagram += '    classDef decision fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#1e293b\n';
+    diagram += '    classDef success fill:#d1fae5,stroke:#10b981,stroke-width:2px,color:#1e293b\n';
+    diagram += '    classDef failure fill:#fee2e2,stroke:#ef4444,stroke-width:2px,color:#1e293b\n';
+    diagram += '    classDef farewell fill:#e0e7ff,stroke:#6366f1,stroke-width:2px,color:#1e293b\n';
     diagram += '\n';
 
     // First pass: create valid node IDs and filter valid nodes
@@ -681,25 +704,29 @@ function generateMermaidDiagram(flowData) {
         promptSummary = promptText.length > 50 ? promptText.substring(0, 47) + '...' : promptText;
       }
 
-      // Determine node shape based on type
+      // Determine node shape and style based on type and content
       let nodeShape = 'rectangle';
-      let classType = '';
+      let classType = 'default';
 
-      if (node.type === 'greeting') {
+      // Map node types to appropriate styles
+      if (node.type === 'greeting' || node.id === 'start') {
         nodeShape = 'stadium';
         classType = 'greeting';
-      } else if (node.type === 'question') {
+      } else if (node.type === 'verification' || node.content?.toLowerCase().includes('verify') || node.content?.toLowerCase().includes('confirm identity')) {
         nodeShape = 'rectangle';
-        classType = 'question';
-      } else if (node.type === 'decision') {
+        classType = 'verification';
+      } else if (node.type === 'decision' || node.nextActions && Object.keys(node.nextActions).length > 1) {
         nodeShape = 'rhombus';
         classType = 'decision';
-      } else if (node.type === 'confirmation') {
-        nodeShape = 'rectangle';
-        classType = 'confirmation';
-      } else if (node.type === 'farewell') {
+      } else if (node.type === 'farewell' || node.id?.includes('end')) {
         nodeShape = 'stadium';
         classType = 'farewell';
+      } else if (node.content?.toLowerCase().includes('success') || node.content?.toLowerCase().includes('completed')) {
+        classType = 'success';
+      } else if (node.content?.toLowerCase().includes('fail') || node.content?.toLowerCase().includes('error') || node.content?.toLowerCase().includes('not verified')) {
+        classType = 'failure';
+      } else {
+        classType = 'main';
       }
 
       // Build the node with embedded info

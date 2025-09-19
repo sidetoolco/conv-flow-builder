@@ -56,7 +56,8 @@ app.post('/api/upload', upload.array('audioFiles', 10), async (req, res) => {
       const transcript = await assemblyAI.transcripts.transcribe({
         audio: file.path,
         speaker_labels: true,
-        auto_highlights: true
+        auto_highlights: true,
+        language_detection: true
       });
 
       await fs.unlink(file.path);
@@ -64,7 +65,8 @@ app.post('/api/upload', upload.array('audioFiles', 10), async (req, res) => {
       transcriptions.push({
         filename: file.originalname,
         text: transcript.text,
-        utterances: transcript.utterances || []
+        utterances: transcript.utterances || [],
+        language: transcript.language_code || 'en'
       });
     }
 
@@ -145,19 +147,33 @@ function generateMermaidDiagram(flowData) {
   let diagram = 'graph TD\n';
 
   flowData.nodes.forEach(node => {
-    const label = node.content.length > 50
-      ? node.content.substring(0, 47) + '...'
-      : node.content;
+    // Escape special characters for Mermaid
+    const label = (node.content || '')
+      .replace(/"/g, "'")
+      .replace(/\n/g, ' ')
+      .replace(/[{}]/g, '')
+      .trim();
 
-    const shape = node.type === 'question' ? `${node.id}{{"${label}"}}` :
-                  node.type === 'greeting' || node.type === 'farewell' ? `${node.id}(["${label}"])` :
-                  `${node.id}["${label}"]`;
+    const truncatedLabel = label.length > 50
+      ? label.substring(0, 47) + '...'
+      : label;
+
+    // Use safe node ID
+    const nodeId = node.id.replace(/[^a-zA-Z0-9_]/g, '_');
+
+    const shape = node.type === 'question' ?
+                  `${nodeId}[?${truncatedLabel}?]` :
+                  node.type === 'greeting' || node.type === 'farewell' ?
+                  `${nodeId}((${truncatedLabel}))` :
+                  `${nodeId}[${truncatedLabel}]`;
 
     diagram += `    ${shape}\n`;
   });
 
   flowData.edges.forEach(edge => {
-    diagram += `    ${edge.from} --> ${edge.to}\n`;
+    const fromId = edge.from.replace(/[^a-zA-Z0-9_]/g, '_');
+    const toId = edge.to.replace(/[^a-zA-Z0-9_]/g, '_');
+    diagram += `    ${fromId} --> ${toId}\n`;
   });
 
   return diagram;

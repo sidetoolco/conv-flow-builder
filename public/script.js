@@ -128,8 +128,28 @@ function displayResults(data) {
 
 function displayDiagram(mermaidCode) {
     const container = document.getElementById('mermaidDiagram');
-    container.innerHTML = `<pre class="mermaid">${mermaidCode}</pre>`;
-    mermaid.init(undefined, container.querySelector('.mermaid'));
+    container.innerHTML = '';
+
+    try {
+        const graphDiv = document.createElement('div');
+        graphDiv.className = 'mermaid';
+        graphDiv.textContent = mermaidCode;
+        container.appendChild(graphDiv);
+
+        mermaid.init(undefined, graphDiv);
+    } catch (error) {
+        console.error('Mermaid diagram error:', error);
+        container.innerHTML = `
+            <div style="color: red; padding: 20px;">
+                <h4>Error generating diagram</h4>
+                <p>There was an issue with the diagram syntax. Please try again.</p>
+                <details>
+                    <summary>Debug Info</summary>
+                    <pre>${mermaidCode}</pre>
+                </details>
+            </div>
+        `;
+    }
 }
 
 function displayPrompts(flowData) {
@@ -158,7 +178,10 @@ function displayTranscript(transcriptions) {
 
     transcriptions.forEach(transcript => {
         const section = document.createElement('div');
-        section.innerHTML = `<h3>${transcript.filename}</h3>`;
+        const langBadge = transcript.language === 'es' ? '🇪🇸 Spanish' : '🇬🇧 English';
+        section.innerHTML = `
+            <h3>${transcript.filename} <span style="font-size: 0.8em; color: #667eea;">${langBadge}</span></h3>
+        `;
 
         transcript.utterances.forEach(utterance => {
             const utteranceDiv = document.createElement('div');

@@ -322,23 +322,45 @@ IMPORTANT:
 - Extract actual phrases and patterns from the transcript`;
 
   try {
-    console.log('Sending request to OpenAI GPT-4...');
+    console.log('Sending request to OpenAI...');
     console.log('Prompt length:', prompt.length, 'characters');
 
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4-0125-preview',  // Using GPT-4 Turbo latest stable version
-      messages: [
-        { role: 'system', content: 'You are an expert voice AI agent designer. You analyze real human agent conversations and create detailed blueprints for AI voice agents that can replicate the conversation flow, including all decision points, error handling, and natural conversation patterns. You understand both the technical requirements and the conversational nuances needed for effective voice AI. Always respond with valid JSON.' },
-        { role: 'user', content: prompt }
-      ],
-      response_format: { type: 'json_object' },
-      temperature: 0.3,  // Lower temperature for more consistent output
-      max_tokens: 4000  // Ensure we have enough tokens for response
-    }).catch(apiError => {
-      console.error('OpenAI API call failed:', apiError);
-      console.error('Error details:', apiError.response?.data || apiError.message);
-      throw apiError;
-    });
+    let response;
+    try {
+      // Try GPT-4 first
+      response = await openai.chat.completions.create({
+        model: 'gpt-4-0125-preview',  // Using GPT-4 Turbo latest stable version
+        messages: [
+          { role: 'system', content: 'You are an expert voice AI agent designer. You analyze real human agent conversations and create detailed blueprints for AI voice agents that can replicate the conversation flow, including all decision points, error handling, and natural conversation patterns. You understand both the technical requirements and the conversational nuances needed for effective voice AI. Always respond with valid JSON.' },
+          { role: 'user', content: prompt }
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.3,  // Lower temperature for more consistent output
+        max_tokens: 4000  // Ensure we have enough tokens for response
+      });
+      console.log('GPT-4 response received successfully');
+    } catch (gpt4Error) {
+      console.error('GPT-4 failed, trying GPT-3.5:', gpt4Error.message);
+
+      // Fallback to GPT-3.5
+      try {
+        response = await openai.chat.completions.create({
+          model: 'gpt-3.5-turbo-0125',  // Fallback to GPT-3.5
+          messages: [
+            { role: 'system', content: 'You are an expert at analyzing conversations and creating voice agent flows. Always respond with valid JSON.' },
+            { role: 'user', content: prompt.substring(0, 3000) }  // Shorter prompt for GPT-3.5
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.3,
+          max_tokens: 2000
+        });
+        console.log('GPT-3.5 fallback successful');
+      } catch (gpt35Error) {
+        console.error('Both GPT-4 and GPT-3.5 failed');
+        console.error('GPT-3.5 error:', gpt35Error.message);
+        throw gpt35Error;
+      }
+    }
 
     // Check if we got a valid response
     if (!response || !response.choices || !response.choices[0] || !response.choices[0].message) {

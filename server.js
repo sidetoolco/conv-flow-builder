@@ -23,11 +23,9 @@ const requiredEnvVars = ['ASSEMBLYAI_API_KEY', 'OPENAI_API_KEY', 'SUPABASE_URL',
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingEnvVars.length > 0) {
-  console.error('ERROR: Missing required environment variables:', missingEnvVars.join(', '));
-  console.error('Please copy .env.example to .env and fill in your API keys');
-  if (process.env.NODE_ENV === 'production') {
-    process.exit(1);
-  }
+  console.warn('WARNING: Missing required environment variables:', missingEnvVars.join(', '));
+  console.warn('Please set these environment variables in Vercel dashboard or .env file');
+  // Don't exit in production to allow Vercel to deploy
 }
 
 const assemblyAI = new AssemblyAI({

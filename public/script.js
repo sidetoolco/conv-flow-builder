@@ -131,7 +131,7 @@ async function displayDiagram(mermaidCode) {
     container.innerHTML = '';
 
     // Log the diagram for debugging
-    console.log('Attempting to render Mermaid diagram:', mermaidCode);
+    console.log('Attempting to render enhanced Mermaid diagram:', mermaidCode);
 
     try {
         // Create a unique ID for this diagram
@@ -144,7 +144,26 @@ async function displayDiagram(mermaidCode) {
         graphDiv.textContent = mermaidCode;
         container.appendChild(graphDiv);
 
-        // Re-initialize mermaid with safe settings
+        // Re-initialize mermaid with enhanced settings
+        await mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis',
+                padding: 15
+            },
+            themeVariables: {
+                primaryColor: '#667eea',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#5a67d8',
+                lineColor: '#94a3b8',
+                secondaryColor: '#fbbf24',
+                tertiaryColor: '#10b981'
+            }
+        });
+
         await mermaid.run({
             querySelector: `#${diagramId}`,
             suppressErrors: false
@@ -154,23 +173,33 @@ async function displayDiagram(mermaidCode) {
         console.error('Mermaid rendering error:', error);
         console.error('Problematic diagram:', mermaidCode);
 
-        // Show a user-friendly error message
-        container.innerHTML = `
-            <div style="padding: 40px; text-align: center;">
-                <h4 style="color: #667eea; margin-bottom: 20px;">Flow Diagram Generation Issue</h4>
-                <p style="color: #64748b; margin-bottom: 20px;">
-                    The conversation flow is being processed. This may happen with complex conversations.
-                </p>
-                <p style="color: #94a3b8; font-size: 0.9rem;">
-                    You can still view the prompts and transcript in the other tabs.
-                </p>
-                <details style="margin-top: 30px; text-align: left; background: #f8fafc; padding: 20px; border-radius: 8px;">
-                    <summary style="cursor: pointer; color: #667eea; font-weight: 600;">Technical Details</summary>
-                    <pre style="margin-top: 10px; overflow-x: auto; font-size: 0.8rem; color: #475569;">${mermaidCode}</pre>
-                    <pre style="color: #ef4444; font-size: 0.8rem; margin-top: 10px;">${error.message || error}</pre>
-                </details>
-            </div>
-        `;
+        // Try fallback with simpler rendering
+        try {
+            container.innerHTML = '';
+            const fallbackDiv = document.createElement('div');
+            fallbackDiv.className = 'mermaid';
+            fallbackDiv.textContent = mermaidCode.replace(/<br\/>/g, ' ').replace(/<small>/g, '').replace(/<\/small>/g, '');
+            container.appendChild(fallbackDiv);
+            await mermaid.contentLoaded();
+        } catch (fallbackError) {
+            // Show a user-friendly error message
+            container.innerHTML = `
+                <div style="padding: 40px; text-align: center;">
+                    <h4 style="color: #667eea; margin-bottom: 20px;">Flow Diagram Generation Issue</h4>
+                    <p style="color: #64748b; margin-bottom: 20px;">
+                        The conversation flow is complex. View the detailed prompts in the Agent Prompts tab for complete information.
+                    </p>
+                    <p style="color: #94a3b8; font-size: 0.9rem;">
+                        The Agent Prompts tab contains all the voice AI agent instructions extracted from your conversation.
+                    </p>
+                    <details style="margin-top: 30px; text-align: left; background: #f8fafc; padding: 20px; border-radius: 8px;">
+                        <summary style="cursor: pointer; color: #667eea; font-weight: 600;">Technical Details</summary>
+                        <pre style="margin-top: 10px; overflow-x: auto; font-size: 0.8rem; color: #475569;">${mermaidCode}</pre>
+                        <pre style="color: #ef4444; font-size: 0.8rem; margin-top: 10px;">${error.message || error}</pre>
+                    </details>
+                </div>
+            `;
+        }
     }
 }
 
@@ -178,16 +207,85 @@ function displayPrompts(flowData) {
     const container = document.getElementById('promptsContainer');
     container.innerHTML = '';
 
-    flowData.nodes.forEach(node => {
-        const promptCard = document.createElement('div');
-        promptCard.className = 'prompt-card';
+    // Add global instructions if available
+    if (flowData.globalInstructions) {
+        const globalCard = document.createElement('div');
+        globalCard.className = 'prompt-card global-instructions';
+        globalCard.innerHTML = `
+            <h4>🎯 Global Agent Instructions</h4>
+            <div class="prompt-text">${flowData.globalInstructions}</div>
+        `;
+        container.appendChild(globalCard);
+    }
 
-        const prompt = flowData.prompts[node.id] || 'No prompt available';
+    // Add error handling instructions if available
+    if (flowData.errorHandling) {
+        const errorCard = document.createElement('div');
+        errorCard.className = 'prompt-card error-handling';
+        errorCard.innerHTML = `
+            <h4>⚠️ Error Handling</h4>
+            <div class="prompt-text">${flowData.errorHandling}</div>
+        `;
+        container.appendChild(errorCard);
+    }
+
+    // Display each node with comprehensive details
+    flowData.nodes.forEach((node, index) => {
+        const promptCard = document.createElement('div');
+        promptCard.className = `prompt-card node-type-${node.type || 'default'}`;
+
+        // Get the full prompt or fallback to old format
+        const fullPrompt = node.fullPrompt || flowData.prompts?.[node.id] || 'No prompt available';
+        const examples = node.examples || [];
+        const listenFor = node.listenFor || [];
+        const nextActions = node.nextActions || {};
+
+        let nextActionsHtml = '';
+        if (Object.keys(nextActions).length > 0) {
+            nextActionsHtml = `
+                <div class="next-actions">
+                    <strong>Next Actions:</strong>
+                    <ul>
+                        ${Object.entries(nextActions).map(([condition, target]) =>
+                            `<li>${condition} → ${target}</li>`
+                        ).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+
+        let examplesHtml = '';
+        if (examples.length > 0) {
+            examplesHtml = `
+                <div class="examples">
+                    <strong>Example Phrases:</strong>
+                    <ul>${examples.map(ex => `<li>"${ex}"</li>`).join('')}</ul>
+                </div>
+            `;
+        }
+
+        let listenForHtml = '';
+        if (listenFor.length > 0) {
+            listenForHtml = `
+                <div class="listen-for">
+                    <strong>Listen For:</strong>
+                    <ul>${listenFor.map(kw => `<li>${kw}</li>`).join('')}</ul>
+                </div>
+            `;
+        }
 
         promptCard.innerHTML = `
-            <h4>${node.id}</h4>
-            <span class="node-type">${node.type}</span>
-            <div class="prompt-text">${prompt}</div>
+            <div class="prompt-header">
+                <h4>Step ${index + 1}: ${node.content || node.id}</h4>
+                <span class="node-type">${node.type || 'action'}</span>
+                <span class="speaker-badge">${node.speaker || 'agent'}</span>
+            </div>
+            <div class="prompt-text">${fullPrompt}</div>
+            ${examplesHtml}
+            ${listenForHtml}
+            ${nextActionsHtml}
+            ${node.timeout ? `<div class="timeout"><strong>Timeout:</strong> ${node.timeout} seconds</div>` : ''}
+            ${node.retryPrompt ? `<div class="retry"><strong>Retry:</strong> "${node.retryPrompt}"</div>` : ''}
         `;
 
         container.appendChild(promptCard);

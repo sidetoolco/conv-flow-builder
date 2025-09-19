@@ -417,6 +417,37 @@ header p {
     transition: var(--transition);
     border: 2px solid transparent;
     animation: slideUp 0.3s ease-out;
+    position: relative;
+}
+
+.prompt-card.global-instructions {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-color: #0284c7;
+}
+
+.prompt-card.error-handling {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border-color: #dc2626;
+}
+
+.prompt-card.node-type-greeting {
+    border-left: 4px solid #0284c7;
+}
+
+.prompt-card.node-type-question {
+    border-left: 4px solid #d97706;
+}
+
+.prompt-card.node-type-decision {
+    border-left: 4px solid #ec4899;
+}
+
+.prompt-card.node-type-confirmation {
+    border-left: 4px solid #059669;
+}
+
+.prompt-card.node-type-farewell {
+    border-left: 4px solid #9333ea;
 }
 
 .prompt-card:hover {
@@ -425,11 +456,20 @@ header p {
     border-color: #e0e7ff;
 }
 
+.prompt-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
 .prompt-card h4 {
     color: #667eea;
-    margin-bottom: 12px;
+    margin: 0;
     font-size: 1.2rem;
     font-weight: 600;
+    flex: 1;
 }
 
 .prompt-card .node-type {
@@ -439,10 +479,20 @@ header p {
     color: white;
     border-radius: 20px;
     font-size: 0.85rem;
-    margin-bottom: 16px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+.prompt-card .speaker-badge {
+    display: inline-block;
+    background: #f3f4f6;
+    color: #374151;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
 }
 
 .prompt-card .prompt-text {
@@ -455,6 +505,45 @@ header p {
     font-size: 0.95rem;
     line-height: 1.6;
     border: 1px solid #e2e8f0;
+    margin-bottom: 16px;
+}
+
+.prompt-card .examples,
+.prompt-card .listen-for,
+.prompt-card .next-actions,
+.prompt-card .timeout,
+.prompt-card .retry {
+    margin-top: 12px;
+    padding: 12px;
+    background: #f9fafb;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.prompt-card .examples strong,
+.prompt-card .listen-for strong,
+.prompt-card .next-actions strong,
+.prompt-card .timeout strong,
+.prompt-card .retry strong {
+    color: #667eea;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.prompt-card ul {
+    margin: 8px 0;
+    padding-left: 20px;
+    list-style: disc;
+}
+
+.prompt-card li {
+    color: #64748b;
+    margin: 4px 0;
+}
+
+.next-actions li {
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
 }
 
 .transcript-container {

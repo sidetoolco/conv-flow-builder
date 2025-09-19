@@ -252,48 +252,58 @@ async function analyzeConversationFlow(transcriptions) {
     }
   }
 
-  const prompt = `Analyze this conversation transcript and create a structured conversation flow for a voice AI agent.
+  const prompt = `Analyze this conversation transcript and create a comprehensive voice AI agent blueprint with detailed conversation flow.
 
 ${!hasSpeakerSeparation ? 'NOTE: This transcript does not have speaker separation. Please analyze the content to identify conversation turns between agent and customer based on context clues like greetings, questions, confirmations, etc.' : ''}
 
 Transcript:
 ${transcriptText}
 
-Based on this transcript, identify the conversation flow. Look for:
-- Greetings ("Buen día", "Hello")
-- Agent identification ("hablo de parte de...")
-- Customer responses ("Sí señorita")
-- Payment discussions ("pago de su crédito")
-- Confirmations and closings
+Create a DETAILED voice AI agent blueprint. For each conversation node:
 
-Please provide:
-1. A conversation flow in JSON format with nodes and edges
-2. For each node, include:
-   - id: unique identifier (use simple IDs like "node1", "node2", etc.)
-   - type: "greeting", "question", "response", "confirmation", "farewell", etc.
-   - speaker: "agent" or "customer" (infer from context if not labeled)
-   - content: what is said (keep it concise, under 40 characters)
-   - prompt: the AI prompt to use at this node for a voice agent
+1. Extract the EXACT agent behavior and speaking patterns
+2. Include decision logic and branching based on customer responses
+3. Capture tone, pauses, and conversation tactics
+4. Include error handling and fallback responses
 
-3. For edges, use format: {"from": "node1", "to": "node2"}
+Provide a JSON structure with:
 
-IMPORTANT: Create at least 3-5 nodes based on the conversation structure, even if it's a continuous text.
-
-Format the response as JSON with structure:
-{
-  "nodes": [...],
-  "edges": [...],
-  "prompts": {
-    "node1": "prompt text",
-    "node2": "prompt text"
+"nodes": [
+  {
+    "id": "node1",
+    "type": "greeting"/"question"/"confirmation"/"decision"/"farewell",
+    "speaker": "agent"/"customer",
+    "content": "Brief description (max 30 chars)",
+    "fullPrompt": "Complete voice agent instruction including: What to say, how to say it, what to listen for, and next actions",
+    "examples": ["Example phrases the agent should use"],
+    "listenFor": ["Keywords or patterns to detect in customer response"],
+    "nextActions": {
+      "positive": "nodeX",
+      "negative": "nodeY",
+      "unclear": "nodeZ"
+    },
+    "timeout": seconds to wait for response,
+    "retryPrompt": "What to say if no response"
   }
-}`;
+],
+"edges": [
+  {"from": "node1", "to": "node2", "condition": "when customer says yes/agrees"}
+],
+"globalInstructions": "Overall agent personality and behavior guidelines",
+"errorHandling": "What to do when conversation goes off-script"
+
+IMPORTANT:
+- Create comprehensive nodes that capture the FULL conversation logic
+- Include at least 5-10 nodes to represent the complete flow
+- Each node's fullPrompt should be self-contained instructions for the voice AI
+- Include decision branches and error handling
+- Extract actual phrases and patterns from the transcript`;
 
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4-turbo-preview',  // Using GPT-4 Turbo - latest available model
       messages: [
-        { role: 'system', content: 'You are an expert at analyzing conversations and creating voice agent flows. You excel at understanding context, identifying speakers, and creating structured conversation flows for voice AI agents.' },
+        { role: 'system', content: 'You are an expert voice AI agent designer. You analyze real human agent conversations and create detailed blueprints for AI voice agents that can replicate the conversation flow, including all decision points, error handling, and natural conversation patterns. You understand both the technical requirements and the conversational nuances needed for effective voice AI.' },
         { role: 'user', content: prompt }
       ],
       response_format: { type: 'json_object' },
@@ -340,6 +350,14 @@ function generateMermaidDiagram(flowData) {
     const nodeMap = new Map();
     const validNodes = [];
 
+    // Style definitions for different node types
+    diagram += '    classDef greeting fill:#e0f2fe,stroke:#0284c7,stroke-width:2px\n';
+    diagram += '    classDef question fill:#fef3c7,stroke:#d97706,stroke-width:2px\n';
+    diagram += '    classDef decision fill:#fce7f3,stroke:#ec4899,stroke-width:2px\n';
+    diagram += '    classDef confirmation fill:#d1fae5,stroke:#059669,stroke-width:2px\n';
+    diagram += '    classDef farewell fill:#e9d5ff,stroke:#9333ea,stroke-width:2px\n';
+    diagram += '\n';
+
     // First pass: create valid node IDs and filter valid nodes
     flowData.nodes.forEach((node, index) => {
       if (!node || !node.id) {
@@ -352,31 +370,75 @@ function generateMermaidDiagram(flowData) {
       validNodes.push({ ...node, safeId });
     });
 
-    // Second pass: add nodes to diagram
+    // Second pass: add nodes to diagram with embedded prompts
     validNodes.forEach(node => {
-      // Clean and escape label text - be very conservative
-      let label = (node.content || 'Node')
+      // Create multi-line label with content and key prompt info
+      let mainLabel = (node.content || 'Node')
         .toString()
         .replace(/[\r\n\t]+/g, ' ')
         .replace(/['"]/g, '')
         .replace(/[`~!@#$%^&*()+={}[\]|\\:;<>?,./]/g, '')
         .trim();
 
-      // Truncate if too long
-      if (label.length > 40) {
-        label = label.substring(0, 37) + '...';
+      // Truncate main label if needed
+      if (mainLabel.length > 30) {
+        mainLabel = mainLabel.substring(0, 27) + '...';
       }
 
-      // Ensure label is not empty
-      if (!label) {
-        label = 'Node';
+      // Extract key prompt elements
+      let promptSummary = '';
+      if (node.fullPrompt) {
+        // Extract first key instruction from prompt
+        const promptText = node.fullPrompt.substring(0, 60)
+          .replace(/[\r\n\t]+/g, ' ')
+          .replace(/['"]/g, '')
+          .replace(/[`~!@#$%^&*()+={}[\]|\\:;<>?,./]/g, '')
+          .trim();
+        promptSummary = promptText.length > 50 ? promptText.substring(0, 47) + '...' : promptText;
       }
 
-      // Use only square brackets for all nodes (safest option)
-      diagram += `    ${node.safeId}[${label}]\n`;
+      // Determine node shape based on type
+      let nodeShape = 'rectangle';
+      let classType = '';
+
+      if (node.type === 'greeting') {
+        nodeShape = 'stadium';
+        classType = 'greeting';
+      } else if (node.type === 'question') {
+        nodeShape = 'rectangle';
+        classType = 'question';
+      } else if (node.type === 'decision') {
+        nodeShape = 'rhombus';
+        classType = 'decision';
+      } else if (node.type === 'confirmation') {
+        nodeShape = 'rectangle';
+        classType = 'confirmation';
+      } else if (node.type === 'farewell') {
+        nodeShape = 'stadium';
+        classType = 'farewell';
+      }
+
+      // Build the node with embedded info
+      if (nodeShape === 'stadium') {
+        diagram += `    ${node.safeId}(["${mainLabel}"])`;
+      } else if (nodeShape === 'rhombus') {
+        diagram += `    ${node.safeId}{"${mainLabel}"}`;
+      } else {
+        // Rectangle with multi-line content
+        if (promptSummary) {
+          diagram += `    ${node.safeId}["${mainLabel}<br/><small>${promptSummary}</small>"]`;
+        } else {
+          diagram += `    ${node.safeId}["${mainLabel}"]`;
+        }
+      }
+
+      if (classType) {
+        diagram += `:::${classType}`;
+      }
+      diagram += '\n';
     });
 
-    // Third pass: add edges
+    // Third pass: add edges with conditions
     if (flowData.edges && Array.isArray(flowData.edges)) {
       flowData.edges.forEach(edge => {
         if (!edge || !edge.from || !edge.to) {
@@ -387,7 +449,18 @@ function generateMermaidDiagram(flowData) {
         const toId = nodeMap.get(edge.to);
 
         if (fromId && toId) {
-          diagram += `    ${fromId} --> ${toId}\n`;
+          // Add edge with condition label if available
+          if (edge.condition) {
+            const condition = edge.condition
+              .substring(0, 20)
+              .replace(/[\r\n\t]+/g, ' ')
+              .replace(/['"]/g, '')
+              .replace(/[`~!@#$%^&*()+={}[\]|\\:;<>?,./]/g, '')
+              .trim();
+            diagram += `    ${fromId} -->|${condition}| ${toId}\n`;
+          } else {
+            diagram += `    ${fromId} --> ${toId}\n`;
+          }
         }
       });
     }
@@ -397,7 +470,7 @@ function generateMermaidDiagram(flowData) {
       diagram = 'graph TD\n    Start[Start]';
     }
 
-    console.log('Generated Mermaid diagram:', diagram);
+    console.log('Generated enhanced Mermaid diagram:', diagram);
     return diagram;
   } catch (error) {
     console.error('Error generating Mermaid diagram:', error);

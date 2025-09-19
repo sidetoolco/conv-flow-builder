@@ -239,3 +239,111 @@ document.getElementById('exportPrompts').addEventListener('click', () => {
     a.click();
     URL.revokeObjectURL(url);
 });
+
+// PDF Export for Diagram
+document.getElementById('exportDiagramPDF').addEventListener('click', async () => {
+    if (!currentFlowData) return;
+
+    const { jsPDF } = window.jspdf;
+    const diagramContainer = document.getElementById('mermaidDiagram');
+
+    try {
+        const canvas = await html2canvas(diagramContainer, {
+            scale: 2,
+            backgroundColor: '#ffffff'
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'px',
+            format: [canvas.width, canvas.height]
+        });
+
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+        pdf.save('conversation-flow-diagram.pdf');
+    } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Error generating PDF. Please try again.');
+    }
+});
+
+// PDF Export for Prompts
+document.getElementById('exportPromptsPDF').addEventListener('click', () => {
+    if (!currentFlowData) return;
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF();
+
+    // Add title
+    pdf.setFontSize(20);
+    pdf.text('Voice Agent Conversation Flow', 20, 20);
+
+    pdf.setFontSize(12);
+    let yPos = 40;
+    const lineHeight = 7;
+    const pageHeight = pdf.internal.pageSize.height;
+    const margin = 20;
+
+    // Add nodes and prompts
+    currentFlowData.flowData.nodes.forEach((node, index) => {
+        // Check if we need a new page
+        if (yPos > pageHeight - 40) {
+            pdf.addPage();
+            yPos = 20;
+        }
+
+        // Node header
+        pdf.setFont(undefined, 'bold');
+        pdf.text(`Node ${index + 1}: ${node.id}`, margin, yPos);
+        yPos += lineHeight;
+
+        pdf.setFont(undefined, 'normal');
+        pdf.text(`Type: ${node.type}`, margin + 10, yPos);
+        yPos += lineHeight;
+
+        // Content
+        const content = node.content || 'No content';
+        const contentLines = pdf.splitTextToSize(`Content: ${content}`, pdf.internal.pageSize.width - 40);
+        contentLines.forEach(line => {
+            if (yPos > pageHeight - 20) {
+                pdf.addPage();
+                yPos = 20;
+            }
+            pdf.text(line, margin + 10, yPos);
+            yPos += lineHeight;
+        });
+
+        // Prompt
+        const prompt = currentFlowData.flowData.prompts[node.id] || 'No prompt available';
+        const promptLines = pdf.splitTextToSize(`Prompt: ${prompt}`, pdf.internal.pageSize.width - 40);
+        promptLines.forEach(line => {
+            if (yPos > pageHeight - 20) {
+                pdf.addPage();
+                yPos = 20;
+            }
+            pdf.text(line, margin + 10, yPos);
+            yPos += lineHeight;
+        });
+
+        yPos += lineHeight; // Extra space between nodes
+    });
+
+    // Add edges on a new page
+    pdf.addPage();
+    pdf.setFontSize(16);
+    pdf.text('Conversation Flow Connections', margin, 20);
+    yPos = 35;
+
+    pdf.setFontSize(12);
+    currentFlowData.flowData.edges.forEach(edge => {
+        if (yPos > pageHeight - 20) {
+            pdf.addPage();
+            yPos = 20;
+        }
+        pdf.text(`${edge.from} → ${edge.to}`, margin, yPos);
+        yPos += lineHeight;
+    });
+
+    pdf.save('voice-agent-prompts.pdf');
+});

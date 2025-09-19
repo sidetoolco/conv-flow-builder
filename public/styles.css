@@ -251,15 +251,29 @@ header p {
     margin-bottom: 5px;
 }
 
+.export-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
 .btn-export {
     background: #10b981;
     color: white;
-    margin-top: 20px;
+    flex: 1;
 }
 
 .btn-export:hover {
     background: #059669;
     transform: translateY(-2px);
+}
+
+.pdf-btn {
+    background: #ef4444;
+}
+
+.pdf-btn:hover {
+    background: #dc2626;
 }
 
 .loading {

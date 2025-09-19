@@ -7,6 +7,8 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -46,12 +48,18 @@
                 <div class="diagram-container">
                     <div id="mermaidDiagram"></div>
                 </div>
-                <button class="btn-export" id="exportDiagram">Export Diagram</button>
+                <div class="export-buttons">
+                    <button class="btn-export" id="exportDiagram">Export as Mermaid</button>
+                    <button class="btn-export pdf-btn" id="exportDiagramPDF">Export as PDF</button>
+                </div>
             </div>
 
             <div class="tab-content" id="promptsTab" style="display: none;">
                 <div class="prompts-container" id="promptsContainer"></div>
-                <button class="btn-export" id="exportPrompts">Export Prompts</button>
+                <div class="export-buttons">
+                    <button class="btn-export" id="exportPrompts">Export as JSON</button>
+                    <button class="btn-export pdf-btn" id="exportPromptsPDF">Export as PDF</button>
+                </div>
             </div>
 
             <div class="tab-content" id="transcriptTab" style="display: none;">

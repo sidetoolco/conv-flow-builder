@@ -315,15 +315,21 @@ IMPORTANT:
 
   try {
     console.log('Sending request to OpenAI GPT-4...');
+    console.log('Prompt length:', prompt.length, 'characters');
+
     const response = await openai.chat.completions.create({
-      model: 'gpt-4-turbo-preview',  // Using GPT-4 Turbo - latest available model
+      model: 'gpt-4-0125-preview',  // Using GPT-4 Turbo latest stable version
       messages: [
-        { role: 'system', content: 'You are an expert voice AI agent designer. You analyze real human agent conversations and create detailed blueprints for AI voice agents that can replicate the conversation flow, including all decision points, error handling, and natural conversation patterns. You understand both the technical requirements and the conversational nuances needed for effective voice AI.' },
+        { role: 'system', content: 'You are an expert voice AI agent designer. You analyze real human agent conversations and create detailed blueprints for AI voice agents that can replicate the conversation flow, including all decision points, error handling, and natural conversation patterns. You understand both the technical requirements and the conversational nuances needed for effective voice AI. Always respond with valid JSON.' },
         { role: 'user', content: prompt }
       ],
       response_format: { type: 'json_object' },
       temperature: 0.3,  // Lower temperature for more consistent output
       max_tokens: 4000  // Ensure we have enough tokens for response
+    }).catch(apiError => {
+      console.error('OpenAI API call failed:', apiError);
+      console.error('Error details:', apiError.response?.data || apiError.message);
+      throw apiError;
     });
 
     // Check if we got a valid response
@@ -340,11 +346,25 @@ IMPORTANT:
     try {
       flowData = JSON.parse(messageContent);
     } catch (parseError) {
-      console.error('Failed to parse OpenAI response as JSON:', messageContent?.substring(0, 500));
-      console.error('Parse error:', parseError);
+      console.error('Failed to parse OpenAI response as JSON.');
+      console.error('First 500 chars of response:', messageContent?.substring(0, 500));
+      console.error('Parse error:', parseError.message);
 
-      // Return a fallback flow if parsing fails
-      return {
+      // Try to extract JSON from the response if it's wrapped in text
+      const jsonMatch = messageContent?.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          flowData = JSON.parse(jsonMatch[0]);
+          console.log('Successfully extracted JSON from response');
+        } catch (secondParseError) {
+          console.error('Failed to extract JSON from response:', secondParseError.message);
+        }
+      }
+
+      // If still no valid data, return a fallback flow
+      if (!flowData) {
+        // Return a fallback flow if parsing fails
+        return {
         nodes: [
           {
             id: 'node1',
@@ -389,6 +409,7 @@ IMPORTANT:
         globalInstructions: 'Be helpful and professional',
         errorHandling: 'Ask for clarification if needed'
       };
+      }
     }
 
     console.log('Generated flow data:', JSON.stringify(flowData, null, 2));

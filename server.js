@@ -231,7 +231,7 @@ Format the response as JSON with structure:
 
   try {
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o',  // Using GPT-4o - OpenAI's most advanced model
+      model: 'gpt-5',  // Using GPT-5 model
       messages: [
         { role: 'system', content: 'You are an expert at analyzing conversations and creating voice agent flows. You excel at understanding context, identifying speakers, and creating structured conversation flows for voice AI agents.' },
         { role: 'user', content: prompt }

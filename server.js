@@ -18,12 +18,24 @@ const {
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Validate required environment variables
+const requiredEnvVars = ['ASSEMBLYAI_API_KEY', 'OPENAI_API_KEY', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingEnvVars.length > 0) {
+  console.error('ERROR: Missing required environment variables:', missingEnvVars.join(', '));
+  console.error('Please copy .env.example to .env and fill in your API keys');
+  if (process.env.NODE_ENV === 'production') {
+    process.exit(1);
+  }
+}
+
 const assemblyAI = new AssemblyAI({
-  apiKey: process.env.ASSEMBLYAI_API_KEY
+  apiKey: process.env.ASSEMBLYAI_API_KEY || 'dummy_key_for_development'
 });
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY || 'dummy_key_for_development'
 });
 
 // Configure middleware with proper order
@@ -150,6 +162,14 @@ const upload = multer({
 
 app.post('/api/upload', upload.array('audioFiles', 10), async (req, res) => {
   try {
+    // Validate API keys before processing
+    if (!process.env.ASSEMBLYAI_API_KEY || process.env.ASSEMBLYAI_API_KEY === 'your_assemblyai_api_key_here') {
+      throw new Error('AssemblyAI API key is not configured. Please set ASSEMBLYAI_API_KEY in your .env file');
+    }
+    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY === 'your_openai_api_key_here') {
+      throw new Error('OpenAI API key is not configured. Please set OPENAI_API_KEY in your .env file');
+    }
+
     console.log('Upload request received');
     console.log('Files received:', req.files?.length || 0);
 

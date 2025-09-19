@@ -53,12 +53,19 @@ app.post('/api/upload', upload.array('audioFiles', 10), async (req, res) => {
     for (const file of req.files) {
       console.log(`Transcribing ${file.filename}...`);
 
-      const transcript = await assemblyAI.transcripts.transcribe({
+      // Start transcription
+      const transcriptRequest = await assemblyAI.transcripts.transcribe({
         audio: file.path,
         speaker_labels: true,
-        auto_highlights: true,
-        language_detection: true
+        language_detection: true,
+        speakers_expected: 2
       });
+
+      // Poll until transcription is complete
+      const transcript = await assemblyAI.transcripts.waitForCompletion(transcriptRequest.id);
+
+      console.log('Transcript status:', transcript.status);
+      console.log('Utterances count:', transcript.utterances?.length || 0);
 
       await fs.unlink(file.path);
 
@@ -88,24 +95,50 @@ app.post('/api/upload', upload.array('audioFiles', 10), async (req, res) => {
 });
 
 async function analyzeConversationFlow(transcriptions) {
-  const allUtterances = transcriptions.flatMap(t => t.utterances);
+  // Check if we have utterances with speaker labels
+  const allUtterances = transcriptions.flatMap(t => t.utterances || []);
+
+  let transcriptText = '';
+
+  if (allUtterances.length > 0) {
+    // We have speaker-separated utterances
+    transcriptText = allUtterances.map(u => `Speaker ${u.speaker}: ${u.text}`).join('\n');
+    console.log('Using speaker-separated utterances:', allUtterances.length);
+  } else {
+    // Fallback to full text if no utterances
+    transcriptText = transcriptions.map(t => t.text).join('\n\n');
+    console.log('No utterances found, using full text');
+  }
+
+  if (!transcriptText) {
+    console.error('No transcript text available');
+    return {
+      nodes: [],
+      edges: [],
+      prompts: {},
+      mermaidDiagram: 'graph TD\n    Start[No transcript available]'
+    };
+  }
 
   const prompt = `Analyze this conversation transcript and create a structured conversation flow for a voice AI agent.
 
 Transcript:
-${allUtterances.map(u => `Speaker ${u.speaker}: ${u.text}`).join('\n')}
+${transcriptText}
+
+Important: If the transcript appears to be a single block of text without clear speaker separation, try to identify the conversation flow based on the content (questions, responses, greetings, etc.).
 
 Please provide:
 1. A conversation flow in JSON format with nodes and edges
 2. For each node, include:
-   - id: unique identifier (use simple alphanumeric IDs like "node1", "node2", etc.)
+   - id: unique identifier (use simple IDs like "node1", "node2", etc.)
    - type: "greeting", "question", "response", "confirmation", "farewell", etc.
-   - speaker: who speaks at this node
-   - content: what is said (keep it concise, under 50 characters)
+   - speaker: "agent" or "customer" (infer from context if not labeled)
+   - content: what is said (keep it concise, under 40 characters)
    - prompt: the AI prompt to use at this node for a voice agent
-   - nextSteps: array of possible next node ids
 
 3. For edges, use format: {"from": "node1", "to": "node2"}
+
+IMPORTANT: Create at least 3-5 nodes based on the conversation structure, even if it's a continuous text.
 
 Format the response as JSON with structure:
 {
@@ -129,7 +162,11 @@ Format the response as JSON with structure:
 
     const flowData = JSON.parse(response.choices[0].message.content);
 
+    console.log('Generated flow data:', JSON.stringify(flowData, null, 2));
+
     const mermaidDiagram = generateMermaidDiagram(flowData);
+
+    console.log('Generated Mermaid diagram:', mermaidDiagram);
 
     return {
       ...flowData,

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversation Flow Builder</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Conversation Flow Builder</h1>
+            <p>Upload conversation recordings to generate AI agent flow diagrams and prompts</p>
+        </header>
+
+        <div class="upload-section">
+            <div class="upload-area" id="uploadArea">
+                <svg class="upload-icon" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <h3>Drop audio files here or click to browse</h3>
+                <p>Supports MP3, WAV, M4A, and other audio formats (max 10 files)</p>
+                <input type="file" id="fileInput" multiple accept="audio/*" hidden>
+                <button class="btn-primary" id="browseBtn">Browse Files</button>
+            </div>
+
+            <div id="fileList" class="file-list"></div>
+
+            <button class="btn-process" id="processBtn" disabled>Process Conversations</button>
+        </div>
+
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <h2>Conversation Flow Analysis</h2>
+
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="diagram">Flow Diagram</button>
+                <button class="tab-btn" data-tab="prompts">Agent Prompts</button>
+                <button class="tab-btn" data-tab="transcript">Transcript</button>
+            </div>
+
+            <div class="tab-content" id="diagramTab">
+                <div class="diagram-container">
+                    <div id="mermaidDiagram"></div>
+                </div>
+                <button class="btn-export" id="exportDiagram">Export Diagram</button>
+            </div>
+
+            <div class="tab-content" id="promptsTab" style="display: none;">
+                <div class="prompts-container" id="promptsContainer"></div>
+                <button class="btn-export" id="exportPrompts">Export Prompts</button>
+            </div>
+
+            <div class="tab-content" id="transcriptTab" style="display: none;">
+                <div class="transcript-container" id="transcriptContainer"></div>
+            </div>
+        </div>
+
+        <div class="loading" id="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Processing conversations...</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

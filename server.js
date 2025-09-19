@@ -151,92 +151,80 @@ function generateMermaidDiagram(flowData) {
     // Validate input data
     if (!flowData || !flowData.nodes || !Array.isArray(flowData.nodes)) {
       console.error('Invalid flow data structure');
-      return 'graph TD\n    Start[No data available]';
+      return 'graph TD\n    Start[Start]';
+    }
+
+    // If no nodes, return simple diagram
+    if (flowData.nodes.length === 0) {
+      return 'graph TD\n    Start[Start]';
     }
 
     let diagram = 'graph TD\n';
-    const processedNodes = new Set();
+    const nodeMap = new Map();
+    const validNodes = [];
 
-    // Process nodes
+    // First pass: create valid node IDs and filter valid nodes
     flowData.nodes.forEach((node, index) => {
       if (!node || !node.id) {
-        console.warn('Skipping invalid node:', node);
         return;
       }
 
-      // Create safe node ID - must start with letter, use index as fallback
-      const nodeId = node.id.toString()
-        .replace(/[^a-zA-Z0-9]/g, '_')
-        .replace(/^[^a-zA-Z]/, 'N');
-
-      // Fallback to index-based ID if needed
-      const safeNodeId = nodeId || `node_${index}`;
-
-      // Skip duplicate nodes
-      if (processedNodes.has(safeNodeId)) {
-        return;
-      }
-      processedNodes.add(safeNodeId);
-
-      // Escape and clean label text
-      const content = (node.content || 'Empty')
-        .replace(/[\r\n]+/g, ' ')
-        .replace(/"/g, "'")
-        .replace(/`/g, "'")
-        .replace(/\[/g, '(')
-        .replace(/\]/g, ')')
-        .replace(/[{}]/g, '')
-        .replace(/[<>]/g, '')
-        .trim();
-
-      const truncatedLabel = content.length > 45
-        ? content.substring(0, 42) + '...'
-        : content;
-
-      // Use simple shapes to avoid syntax issues
-      let shape;
-      if (node.type === 'greeting' || node.type === 'farewell') {
-        shape = `${safeNodeId}("${truncatedLabel}")`;
-      } else if (node.type === 'question') {
-        shape = `${safeNodeId}{"${truncatedLabel}"}`;
-      } else {
-        shape = `${safeNodeId}["${truncatedLabel}"]`;
-      }
-
-      diagram += `    ${shape}\n`;
+      // Create simple, safe node ID
+      const safeId = `N${index}`;
+      nodeMap.set(node.id, safeId);
+      validNodes.push({ ...node, safeId });
     });
 
-    // Process edges
+    // Second pass: add nodes to diagram
+    validNodes.forEach(node => {
+      // Clean and escape label text - be very conservative
+      let label = (node.content || 'Node')
+        .toString()
+        .replace(/[\r\n\t]+/g, ' ')
+        .replace(/['"]/g, '')
+        .replace(/[`~!@#$%^&*()+={}[\]|\\:;<>?,./]/g, '')
+        .trim();
+
+      // Truncate if too long
+      if (label.length > 40) {
+        label = label.substring(0, 37) + '...';
+      }
+
+      // Ensure label is not empty
+      if (!label) {
+        label = 'Node';
+      }
+
+      // Use only square brackets for all nodes (safest option)
+      diagram += `    ${node.safeId}[${label}]\n`;
+    });
+
+    // Third pass: add edges
     if (flowData.edges && Array.isArray(flowData.edges)) {
       flowData.edges.forEach(edge => {
         if (!edge || !edge.from || !edge.to) {
-          console.warn('Skipping invalid edge:', edge);
           return;
         }
 
-        const fromId = edge.from.toString()
-          .replace(/[^a-zA-Z0-9]/g, '_')
-          .replace(/^[^a-zA-Z]/, 'N');
-        const toId = edge.to.toString()
-          .replace(/[^a-zA-Z0-9]/g, '_')
-          .replace(/^[^a-zA-Z]/, 'N');
+        const fromId = nodeMap.get(edge.from);
+        const toId = nodeMap.get(edge.to);
 
-        // Only add edge if both nodes exist
-        if (processedNodes.has(fromId) && processedNodes.has(toId)) {
+        if (fromId && toId) {
           diagram += `    ${fromId} --> ${toId}\n`;
         }
       });
     }
 
-    // Add a default node if diagram is empty
-    if (processedNodes.size === 0) {
-      diagram += '    Start[Start Conversation]\n';
+    // If no valid nodes were added, add a default
+    if (validNodes.length === 0) {
+      diagram = 'graph TD\n    Start[Start]';
     }
 
+    console.log('Generated Mermaid diagram:', diagram);
     return diagram;
   } catch (error) {
     console.error('Error generating Mermaid diagram:', error);
-    return 'graph TD\n    Error[Error generating diagram]';
+    return 'graph TD\n    Error[Error]';
   }
 }
 

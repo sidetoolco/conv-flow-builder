@@ -126,26 +126,48 @@ function displayResults(data) {
     displayTranscript(data.transcriptions);
 }
 
-function displayDiagram(mermaidCode) {
+async function displayDiagram(mermaidCode) {
     const container = document.getElementById('mermaidDiagram');
     container.innerHTML = '';
 
+    // Log the diagram for debugging
+    console.log('Attempting to render Mermaid diagram:', mermaidCode);
+
     try {
+        // Create a unique ID for this diagram
+        const diagramId = 'mermaid-' + Date.now();
+
+        // Create the mermaid container
         const graphDiv = document.createElement('div');
+        graphDiv.id = diagramId;
         graphDiv.className = 'mermaid';
         graphDiv.textContent = mermaidCode;
         container.appendChild(graphDiv);
 
-        mermaid.init(undefined, graphDiv);
+        // Re-initialize mermaid with safe settings
+        await mermaid.run({
+            querySelector: `#${diagramId}`,
+            suppressErrors: false
+        });
+
     } catch (error) {
-        console.error('Mermaid diagram error:', error);
+        console.error('Mermaid rendering error:', error);
+        console.error('Problematic diagram:', mermaidCode);
+
+        // Show a user-friendly error message
         container.innerHTML = `
-            <div style="color: red; padding: 20px;">
-                <h4>Error generating diagram</h4>
-                <p>There was an issue with the diagram syntax. Please try again.</p>
-                <details>
-                    <summary>Debug Info</summary>
-                    <pre>${mermaidCode}</pre>
+            <div style="padding: 40px; text-align: center;">
+                <h4 style="color: #667eea; margin-bottom: 20px;">Flow Diagram Generation Issue</h4>
+                <p style="color: #64748b; margin-bottom: 20px;">
+                    The conversation flow is being processed. This may happen with complex conversations.
+                </p>
+                <p style="color: #94a3b8; font-size: 0.9rem;">
+                    You can still view the prompts and transcript in the other tabs.
+                </p>
+                <details style="margin-top: 30px; text-align: left; background: #f8fafc; padding: 20px; border-radius: 8px;">
+                    <summary style="cursor: pointer; color: #667eea; font-weight: 600;">Technical Details</summary>
+                    <pre style="margin-top: 10px; overflow-x: auto; font-size: 0.8rem; color: #475569;">${mermaidCode}</pre>
+                    <pre style="color: #ef4444; font-size: 0.8rem; margin-top: 10px;">${error.message || error}</pre>
                 </details>
             </div>
         `;

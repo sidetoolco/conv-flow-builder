@@ -53,27 +53,40 @@ app.post('/api/upload', upload.array('audioFiles', 10), async (req, res) => {
     for (const file of req.files) {
       console.log(`Transcribing ${file.filename}...`);
 
-      // Start transcription
-      const transcriptRequest = await assemblyAI.transcripts.transcribe({
+      // Upload and transcribe the audio file
+      console.log(`Starting transcription for ${file.filename}...`);
+
+      const transcript = await assemblyAI.transcripts.transcribe({
         audio: file.path,
         speaker_labels: true,
-        language_detection: true,
-        speakers_expected: 2
+        language_detection: true
       });
 
-      // Poll until transcription is complete
-      const transcript = await assemblyAI.transcripts.waitForCompletion(transcriptRequest.id);
+      // Poll for completion
+      let completedTranscript = transcript;
+      while (completedTranscript.status !== 'completed' && completedTranscript.status !== 'error') {
+        console.log('Transcript status:', completedTranscript.status);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+        completedTranscript = await assemblyAI.transcripts.get(transcript.id);
+      }
 
-      console.log('Transcript status:', transcript.status);
-      console.log('Utterances count:', transcript.utterances?.length || 0);
+      if (completedTranscript.status === 'error') {
+        console.error('Transcription error:', completedTranscript.error);
+        throw new Error(`Transcription failed: ${completedTranscript.error}`);
+      }
+
+      console.log('Transcript completed');
+      console.log('Utterances count:', completedTranscript.utterances?.length || 0);
+
+      const finalTranscript = completedTranscript;
 
       await fs.unlink(file.path);
 
       transcriptions.push({
         filename: file.originalname,
-        text: transcript.text,
-        utterances: transcript.utterances || [],
-        language: transcript.language_code || 'en'
+        text: finalTranscript.text,
+        utterances: finalTranscript.utterances || [],
+        language: finalTranscript.language_code || 'en'
       });
     }
 

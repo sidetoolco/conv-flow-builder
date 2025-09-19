@@ -19,9 +19,5 @@
       "src": "/(.*)",
       "dest": "/public/$1"
     }
-  ],
-  "env": {
-    "ASSEMBLYAI_API_KEY": "@assemblyai_api_key",
-    "OPENAI_API_KEY": "@openai_api_key"
-  }
+  ]
 }

@@ -92,22 +92,35 @@ app.post('/api/upload', upload.array('audioFiles', 10), async (req, res) => {
       // Upload and transcribe the audio file
       console.log(`Starting transcription for ${file.filename}...`);
 
+      let uploadUrl;
       try {
         // First, upload the file to AssemblyAI
         console.log('Uploading to AssemblyAI...');
-        const uploadedFile = await assemblyAI.files.upload(file.path);
-        console.log('File uploaded successfully:', uploadedFile.upload_url);
+        const uploadResponse = await assemblyAI.files.upload(file.path);
+        console.log('Upload response:', uploadResponse);
+
+        // The upload response should have an upload_url property
+        uploadUrl = uploadResponse.upload_url || uploadResponse;
+
+        if (!uploadUrl) {
+          throw new Error('No upload URL received from AssemblyAI');
+        }
+
+        console.log('File uploaded successfully, URL:', uploadUrl);
       } catch (uploadError) {
         console.error('AssemblyAI upload error:', uploadError);
         throw new Error(`Failed to upload file to AssemblyAI: ${uploadError.message}`);
       }
 
-      const transcript = await assemblyAI.transcripts.transcribe({
-        audio_url: uploadedFile.upload_url,  // Use the uploaded URL
+      const transcriptData = {
+        audio_url: uploadUrl,  // Use the uploaded URL
         speaker_labels: true,
         speakers_expected: 2,
         language_detection: true
-      });
+      };
+
+      console.log('Creating transcript with data:', transcriptData);
+      const transcript = await assemblyAI.transcripts.transcribe(transcriptData);
 
       // Poll for completion
       let completedTranscript = transcript;

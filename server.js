@@ -642,26 +642,34 @@ function generateMermaidDiagram(flowData) {
     // Validate input data
     if (!flowData || !flowData.nodes || !Array.isArray(flowData.nodes)) {
       console.error('Invalid flow data structure');
-      return 'flowchart TD\n    Start[Start: No Flow Available]';
+      return 'flowchart LR\n    Start([No Flow Available])';
     }
 
     // If no nodes, return simple diagram
     if (flowData.nodes.length === 0) {
-      return 'flowchart TD\n    Start[Start: Empty Flow]';
+      return 'flowchart LR\n    Start([Empty Flow])';
     }
 
-    let diagram = 'flowchart TD\n';
+    let diagram = 'flowchart LR\n';
     const nodeMap = new Map();
     const validNodes = [];
+    const nodeGroups = {
+      greeting: [],
+      verification: [],
+      main: [],
+      decision: [],
+      outcome: []
+    };
 
-    // Professional voice AI flow style definitions
+    // Professional voice AI flow style definitions with better colors
+    diagram += '    %% Style definitions for different node types\n';
     diagram += '    classDef default fill:#ffffff,stroke:#2563eb,stroke-width:2px,color:#1e293b\n';
-    diagram += '    classDef greeting fill:#dbeafe,stroke:#2563eb,stroke-width:3px,color:#1e293b\n';
+    diagram += '    classDef greeting fill:#dbeafe,stroke:#2563eb,stroke-width:3px,color:#1e293b,font-weight:bold\n';
     diagram += '    classDef verification fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#1e293b\n';
     diagram += '    classDef main fill:#ffffff,stroke:#2563eb,stroke-width:2px,color:#1e293b\n';
-    diagram += '    classDef decision fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#1e293b\n';
-    diagram += '    classDef success fill:#d1fae5,stroke:#10b981,stroke-width:2px,color:#1e293b\n';
-    diagram += '    classDef failure fill:#fee2e2,stroke:#ef4444,stroke-width:2px,color:#1e293b\n';
+    diagram += '    classDef decision fill:#f3e8ff,stroke:#9333ea,stroke-width:3px,color:#1e293b\n';
+    diagram += '    classDef success fill:#d1fae5,stroke:#10b981,stroke-width:3px,color:#1e293b,font-weight:bold\n';
+    diagram += '    classDef failure fill:#fee2e2,stroke:#ef4444,stroke-width:3px,color:#1e293b,font-weight:bold\n';
     diagram += '    classDef farewell fill:#e0e7ff,stroke:#6366f1,stroke-width:2px,color:#1e293b\n';
     diagram += '\n';
 
@@ -677,9 +685,10 @@ function generateMermaidDiagram(flowData) {
       validNodes.push({ ...node, safeId });
     });
 
+    // Group nodes by stage for better organization
     // Second pass: add nodes to diagram with embedded prompts
     validNodes.forEach(node => {
-      // Create multi-line label with content and key prompt info
+      // Create clear, readable label
       let mainLabel = (node.content || 'Node')
         .toString()
         .replace(/[\r\n\t]+/g, ' ')
@@ -687,60 +696,75 @@ function generateMermaidDiagram(flowData) {
         .replace(/[`~!@#$%^&*()+={}[\]|\\:;<>?,./]/g, '')
         .trim();
 
-      // Truncate main label if needed
-      if (mainLabel.length > 30) {
-        mainLabel = mainLabel.substring(0, 27) + '...';
+      // Truncate main label if needed but keep it readable
+      if (mainLabel.length > 40) {
+        mainLabel = mainLabel.substring(0, 37) + '...';
       }
 
-      // Extract key prompt elements
-      let promptSummary = '';
-      if (node.fullPrompt) {
-        // Extract first key instruction from prompt
-        const promptText = node.fullPrompt.substring(0, 60)
-          .replace(/[\r\n\t]+/g, ' ')
-          .replace(/['"]/g, '')
-          .replace(/[`~!@#$%^&*()+={}[\]|\\:;<>?,./]/g, '')
-          .trim();
-        promptSummary = promptText.length > 50 ? promptText.substring(0, 47) + '...' : promptText;
-      }
+      // Add icon or prefix based on node type
+      const typeIcons = {
+        greeting: '👋 ',
+        verification: '✓ ',
+        decision: '❓ ',
+        success: '✅ ',
+        failure: '❌ ',
+        farewell: '👋 '
+      };
+
+      const nodeIcon = typeIcons[node.type] || '';
+      mainLabel = nodeIcon + mainLabel;
 
       // Determine node shape and style based on type and content
       let nodeShape = 'rectangle';
       let classType = 'default';
+      let groupType = 'main';
 
-      // Map node types to appropriate styles
-      if (node.type === 'greeting' || node.id === 'start') {
+      // Map node types to appropriate styles and groups
+      if (node.type === 'greeting' || node.id === 'start' || node.id?.toLowerCase().includes('greet')) {
         nodeShape = 'stadium';
         classType = 'greeting';
+        groupType = 'greeting';
       } else if (node.type === 'verification' || node.content?.toLowerCase().includes('verify') || node.content?.toLowerCase().includes('confirm identity')) {
-        nodeShape = 'rectangle';
+        nodeShape = 'trapezoid';
         classType = 'verification';
-      } else if (node.type === 'decision' || node.nextActions && Object.keys(node.nextActions).length > 1) {
+        groupType = 'verification';
+      } else if (node.type === 'decision' || (node.nextActions && Object.keys(node.nextActions).length > 1)) {
         nodeShape = 'rhombus';
         classType = 'decision';
-      } else if (node.type === 'farewell' || node.id?.includes('end')) {
+        groupType = 'decision';
+      } else if (node.type === 'farewell' || node.id?.includes('end') || node.id?.includes('close')) {
         nodeShape = 'stadium';
         classType = 'farewell';
-      } else if (node.content?.toLowerCase().includes('success') || node.content?.toLowerCase().includes('completed')) {
+        groupType = 'outcome';
+      } else if (node.content?.toLowerCase().includes('success') || node.content?.toLowerCase().includes('completed') || node.content?.toLowerCase().includes('processed')) {
+        nodeShape = 'circle';
         classType = 'success';
-      } else if (node.content?.toLowerCase().includes('fail') || node.content?.toLowerCase().includes('error') || node.content?.toLowerCase().includes('not verified')) {
+        groupType = 'outcome';
+      } else if (node.content?.toLowerCase().includes('fail') || node.content?.toLowerCase().includes('error') || node.content?.toLowerCase().includes('not verified') || node.content?.toLowerCase().includes('declined')) {
+        nodeShape = 'circle';
         classType = 'failure';
+        groupType = 'outcome';
       } else {
         classType = 'main';
+        groupType = 'main';
       }
 
-      // Build the node with embedded info
+      // Track node groups
+      nodeGroups[groupType] = nodeGroups[groupType] || [];
+      nodeGroups[groupType].push(node.safeId);
+
+      // Build the node with better shape semantics
       if (nodeShape === 'stadium') {
-        diagram += `    ${node.safeId}(["${mainLabel}"])`;
+        diagram += `    ${node.safeId}([${mainLabel}])`;
       } else if (nodeShape === 'rhombus') {
-        diagram += `    ${node.safeId}{"${mainLabel}"}`;
+        diagram += `    ${node.safeId}{${mainLabel}}`;
+      } else if (nodeShape === 'trapezoid') {
+        diagram += `    ${node.safeId}[/${mainLabel}/]`;
+      } else if (nodeShape === 'circle') {
+        diagram += `    ${node.safeId}((${mainLabel}))`;
       } else {
-        // Rectangle with multi-line content
-        if (promptSummary) {
-          diagram += `    ${node.safeId}["${mainLabel}<br/><small>${promptSummary}</small>"]`;
-        } else {
-          diagram += `    ${node.safeId}["${mainLabel}"]`;
-        }
+        // Rectangle - default
+        diagram += `    ${node.safeId}[${mainLabel}]`;
       }
 
       if (classType) {
@@ -749,8 +773,12 @@ function generateMermaidDiagram(flowData) {
       diagram += '\n';
     });
 
-    // Third pass: add edges with conditions
+    // Add subgraph groupings for better organization
+    diagram += '\n    %% Subgraphs for logical grouping\n';
+
+    // Third pass: add edges with better condition labels
     if (flowData.edges && Array.isArray(flowData.edges)) {
+      diagram += '\n    %% Edge connections\n';
       flowData.edges.forEach(edge => {
         if (!edge || !edge.from || !edge.to) {
           return;
@@ -760,14 +788,27 @@ function generateMermaidDiagram(flowData) {
         const toId = nodeMap.get(edge.to);
 
         if (fromId && toId) {
-          // Add edge with condition label if available
+          // Add edge with improved condition label
           if (edge.condition) {
-            const condition = edge.condition
-              .substring(0, 20)
+            let condition = edge.condition
               .replace(/[\r\n\t]+/g, ' ')
               .replace(/['"]/g, '')
-              .replace(/[`~!@#$%^&*()+={}[\]|\\:;<>?,./]/g, '')
               .trim();
+
+            // Simplify common conditions
+            if (condition.toLowerCase().includes('yes') || condition.toLowerCase().includes('confirmed') || condition.toLowerCase().includes('agree')) {
+              condition = 'Yes';
+            } else if (condition.toLowerCase().includes('no') || condition.toLowerCase().includes('denied') || condition.toLowerCase().includes('reject')) {
+              condition = 'No';
+            } else if (condition.toLowerCase().includes('unclear') || condition.toLowerCase().includes('retry')) {
+              condition = 'Unclear';
+            }
+
+            // Keep condition short
+            if (condition.length > 15) {
+              condition = condition.substring(0, 12) + '...';
+            }
+
             diagram += `    ${fromId} -->|${condition}| ${toId}\n`;
           } else {
             diagram += `    ${fromId} --> ${toId}\n`;

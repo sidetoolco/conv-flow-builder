@@ -3,21 +3,37 @@ let currentFlowData = null;
 
 mermaid.initialize({
     startOnLoad: true,
-    theme: 'neutral',
+    theme: 'base',
     flowchart: {
         useMaxWidth: true,
         htmlLabels: true,
-        curve: 'linear'
+        curve: 'basis',
+        rankSpacing: 80,
+        nodeSpacing: 80,
+        padding: 20
     },
     themeVariables: {
         primaryColor: '#ffffff',
-        primaryTextColor: '#000000',
-        primaryBorderColor: '#000000',
-        lineColor: '#333333',
+        primaryTextColor: '#1e293b',
+        primaryBorderColor: '#2563eb',
+        lineColor: '#6b7280',
         background: '#ffffff',
         mainBkg: '#ffffff',
-        secondaryColor: '#f8f8f8',
-        tertiaryColor: '#eeeeee'
+        secondaryColor: '#dbeafe',
+        tertiaryColor: '#fef3c7',
+        fontFamily: 'Inter, sans-serif',
+        fontSize: '14px',
+        darkMode: false,
+        // Node colors
+        classText: '#1e293b',
+        fillType0: '#ffffff',
+        fillType1: '#dbeafe',
+        fillType2: '#fef3c7',
+        fillType3: '#f3e8ff',
+        fillType4: '#d1fae5',
+        fillType5: '#fee2e2',
+        fillType6: '#e0e7ff',
+        fillType7: '#ffffff'
     }
 });
 

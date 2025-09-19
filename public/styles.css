@@ -269,53 +269,129 @@ button {
 }
 
 .diagram-container {
-    background: var(--white);
-    border: 1px solid var(--gray-200);
-    border-radius: var(--border-radius);
+    background: #ffffff;
+    border: 2px solid var(--gray-300);
+    border-radius: var(--border-radius-lg);
     padding: 40px;
-    min-height: 500px;
+    min-height: 600px;
     display: flex;
     justify-content: center;
     align-items: center;
     overflow: auto;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.05);
 }
 
 #mermaidDiagram {
     width: 100%;
     max-width: 100%;
+    background: #ffffff;
+    padding: 20px;
+    border-radius: var(--border-radius);
 }
 
+/* Mermaid node styles with colors */
 #mermaidDiagram .node rect,
 #mermaidDiagram .node polygon,
 #mermaidDiagram .node circle,
 #mermaidDiagram .node ellipse {
-    fill: var(--white) !important;
-    stroke: var(--black) !important;
     stroke-width: 2px !important;
+}
+
+/* Default node style */
+#mermaidDiagram .default rect,
+#mermaidDiagram .default polygon,
+#mermaidDiagram .default circle,
+#mermaidDiagram .default ellipse {
+    fill: #ffffff !important;
+    stroke: #2563eb !important;
+}
+
+/* Greeting nodes */
+#mermaidDiagram .greeting rect,
+#mermaidDiagram .greeting polygon,
+#mermaidDiagram .greeting circle,
+#mermaidDiagram .greeting ellipse {
+    fill: #dbeafe !important;
+    stroke: #2563eb !important;
+    stroke-width: 3px !important;
+}
+
+/* Verification nodes */
+#mermaidDiagram .verification rect,
+#mermaidDiagram .verification polygon {
+    fill: #fef3c7 !important;
+    stroke: #f59e0b !important;
+}
+
+/* Main process nodes */
+#mermaidDiagram .main rect {
+    fill: #ffffff !important;
+    stroke: #2563eb !important;
+}
+
+/* Decision nodes */
+#mermaidDiagram .decision polygon {
+    fill: #f3e8ff !important;
+    stroke: #9333ea !important;
+}
+
+/* Success nodes */
+#mermaidDiagram .success rect,
+#mermaidDiagram .success circle {
+    fill: #d1fae5 !important;
+    stroke: #10b981 !important;
+}
+
+/* Failure nodes */
+#mermaidDiagram .failure rect,
+#mermaidDiagram .failure circle {
+    fill: #fee2e2 !important;
+    stroke: #ef4444 !important;
+}
+
+/* Farewell nodes */
+#mermaidDiagram .farewell rect,
+#mermaidDiagram .farewell circle,
+#mermaidDiagram .farewell ellipse {
+    fill: #e0e7ff !important;
+    stroke: #6366f1 !important;
 }
 
 #mermaidDiagram .node text {
-    fill: var(--black) !important;
+    fill: #1e293b !important;
     font-family: 'Inter', sans-serif !important;
-    font-weight: 500 !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
 }
 
 #mermaidDiagram .edgeLabel {
-    background-color: var(--white) !important;
+    background-color: #ffffff !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
 }
 
 #mermaidDiagram .edgeLabel text {
-    fill: var(--gray-700) !important;
+    fill: #4b5563 !important;
     font-size: 12px !important;
+    font-weight: 600 !important;
+    font-family: 'Inter', sans-serif !important;
 }
 
 #mermaidDiagram path.path {
-    stroke: var(--gray-600) !important;
+    stroke: #6b7280 !important;
     stroke-width: 2px !important;
 }
 
+/* Highlight main flow path */
+#mermaidDiagram .path-highlight {
+    stroke: #2563eb !important;
+    stroke-width: 3px !important;
+}
+
 #mermaidDiagram .arrowheadPath {
-    fill: var(--gray-600) !important;
+    fill: #6b7280 !important;
+    stroke: #6b7280 !important;
 }
 
 .export-buttons {
